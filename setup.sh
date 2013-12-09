@@ -22,7 +22,7 @@ adduser cloo sudo
 
 # apt install useful stuff
 apt-get update
-apt-get -q -y install bpython screen htop supervisor nginx git-core curl anacron
+apt-get -q -y install bpython screen htop nginx git-core curl anacron
 apt-get -q -y install python-pip python-dev python-setuptools build-essential
 apt-get -q -y install openjdk-6-jdk openjdk-6-jre-headless
 
@@ -33,6 +33,18 @@ ln -s /usr/local/bin/pip /usr/bin/pip
 pip install --upgrade virtualenv
 pip install gunicorn
 pip install requests
+
+
+# get latest version of supervisor via pip
+pip install supervisor
+curl https://gist.github.com/howthebodyworks/176149/raw/88d0d68c4af22a7474ad1d011659ea2d27e35b8d/supervisord.sh > ~/supervisord
+mv ~/supervisord /etc/init.d/supervisord
+chmod a+x /etc/init.d/supervisord
+/usr/sbin/service supervisord stop
+update-rc.d supervisord defaults
+mv /etc/supervisor/supervisord.conf /etc
+ln -s /etc/supervisord.conf /etc/supervisor/supervisord.conf
+/usr/sbin/service supervisord start
 
 
 # set up firewall - allow 22, 80, 443
