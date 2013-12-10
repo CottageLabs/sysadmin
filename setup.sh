@@ -19,6 +19,11 @@ chmod 600 /home/cloo/.ssh/authorized_keys
 adduser cloo sudo
 # visudo and set cloo ALL=(ALL) NOPASSWD: ALL at the end
 
+# prevent "unknown host" message when doing sudo
+# regular user version: sudo sh -c 'echo "127.0.1.1       "`cat /etc/hostname` >> /etc/hosts'
+# but if you're root (should be at this point of script)
+echo "127.0.1.1       "`cat /etc/hostname` >> /etc/hosts
+
 
 # apt install useful stuff
 apt-get update
