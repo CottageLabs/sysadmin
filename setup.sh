@@ -30,6 +30,15 @@ apt-get update
 apt-get -q -y install bpython screen htop nginx git-core curl anacron
 apt-get -q -y install python-pip python-dev python-setuptools build-essential
 apt-get -q -y install openjdk-6-jdk openjdk-6-jre-headless
+apt-get -q -y install python-software-properties  # ability to add PPA-s for the latest versions of software including the add-apt-repository command
+add-apt-repository -y ppa:webupd8team/java
+apt-get update
+# pre-accept the Oracle Java binaries license
+echo "debconf shared/accepted-oracle-license-v1-1 select true" | debconf-set-selections
+echo "debconf shared/accepted-oracle-license-v1-1 seen true" | debconf-set-selections
+apt-get -q -y install oracle-java7-installer  # get the latest Oracle Java
+# run java -version from the command line to check java's version
+# additionally ps and htop will show you the exact path to the java executable running elasticsearch, which includes the version number
 
 
 # pip install useful python stuff
