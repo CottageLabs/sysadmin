@@ -36,7 +36,7 @@ else
 fi
 
 if [ $whatisit == "dir" ]; then
-    cp -r "$dir_or_file_to_backup"/* "$backup_dir"
+    rsync -uaEhv "$dir_or_file_to_backup" "$backup_dir"
     s3cmd sync --acl-private --no-delete-removed "$backup_dir" "$bucket"
 else
     tar -zcf "$backup_dir""$backup_file_prefix"_"$now""$backup_file_suffix" "$dir_or_file_to_backup"
