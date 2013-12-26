@@ -1,0 +1,16 @@
+# /etc/anacrontab: configuration file for anacron
+
+# See anacron(8) and anacrontab(5) for details.
+
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+# These replace cron's entries
+1	5	cron.daily	 nice run-parts --report /etc/cron.daily
+7	10	cron.weekly	 nice run-parts --report /etc/cron.weekly
+@monthly	15	cron.monthly nice run-parts --report /etc/cron.monthly
+# s3cmd, part of the backup script, is not going to find its config file at /home/cloo/.s3cfg if run directly as root
+# and to be fair, other things may break too - scripts get developed as cloo, so just run them as cloo
+# better for security / reliability too, in case a script is buggy
+1	5	doaj-xml-backup		su - cloo -c 'nice -n 19 /home/cloo/backups/backup2s3.sh /opt/doaj/src/doaj/upload/ /home/cloo/backups/doaj-xml-uploads/ dummy s3://doaj-xml-uploads >> /home/cloo/backups/logs/doaj-xml-uploads_`date +%F_%H%M`.log 2>&1'
+1	15	doaj-index-backup	su - cloo -c 'nice -n 19 /home/cloo/backups/backup2s3.sh /opt/elasticsearch/data/ /home/cloo/backups/elasticsearch/ dummy s3://doaj-index >> /home/cloo/backups/logs/doaj-index_`date +%F_%H%M`.log 2>&1'
