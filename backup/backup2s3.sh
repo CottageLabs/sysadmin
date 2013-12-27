@@ -36,10 +36,11 @@ else
 fi
 
 if [ $whatisit == "dir" ]; then
-    rsync -uaEhv "$dir_or_file_to_backup" "$backup_dir"
-    s3cmd sync --acl-private --no-delete-removed "$backup_dir" "$bucket"
+    # need to run rsync as root in order to preserve root permissions and modification times
+    sudo rsync -aEhv "$dir_or_file_to_backup" "$backup_dir"
+    s3cmd sync -H --acl-private --no-delete-removed "$backup_dir" "$bucket"
 else
     tar -zcf "$backup_dir""$backup_file_prefix"_"$now""$backup_file_suffix" "$dir_or_file_to_backup"
-    s3cmd sync --acl-private --no-delete-removed "$backup_dir""$backup_file" "$bucket"
+    s3cmd sync -H --acl-private --no-delete-removed "$backup_dir""$backup_file" "$bucket"
 fi
 
