@@ -28,7 +28,7 @@ echo "127.0.1.1       "`cat /etc/hostname` >> /etc/hosts
 # apt install useful stuff
 apt-get update
 apt-get -q -y install mcelog  # hardware error decoder / logger
-apt-get -q -y install bpython screen htop nginx git-core curl anacron lm-sensors
+apt-get -q -y install bpython screen htop nginx git-core curl anacron lm-sensors sysv-rc-conf
 apt-get -q -y install python-pip python-dev python-setuptools build-essential
 apt-get -q -y install openjdk-6-jdk openjdk-6-jre-headless
 apt-get -q -y install python-software-properties  # ability to add PPA-s for the latest versions of software including the add-apt-repository command
