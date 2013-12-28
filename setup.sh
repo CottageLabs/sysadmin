@@ -151,6 +151,15 @@ PasswordAuthentication no
 # edit the settings.json - change db type to sqlite and db file to var/sqlite.db
 
 
+# set up sensors package for better monitoring and more information e.g. CPU temperatures
+# taken from https://help.ubuntu.com/community/SensorInstallHowto
+# 1. apt-get install lm-sensors (lm-sensors should already get installed above so you should be able to skip this)
+# 2. Run sudo sensors-detect and choose YES to all YES/no questions.
+# 3. At the end of sensors-detect, a list of modules that needs to be loaded will displayed. Type "yes" to have sensors-detect insert those modules into /etc/modules, or edit /etc/modules yourself.
+# 4. Next, run
+# sudo service module-init-tools restart
+# This will read the changes you made to /etc/modules in step 3, and insert the new modules into the kernel.
+# See sensor info by running "sensors" from the shell.
 
 
 
