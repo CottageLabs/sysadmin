@@ -25,6 +25,7 @@ Elasticsearch and nginx plugins:
     sudo usermod -a -G newrelic cloo
     sudo chown newrelic:newrelic /var/log/newrelic
     sudo chown newrelic:newrelic /var/run/newrelic
+    sudo chmod 775 /var/log/newrelic  # group-writable, so we can try it out as the cloo user
 
     # alright, now test the config - won't run as a daemon, just outputs to terminal
     newrelic_plugin_agent -c /etc/newrelic/newrelic_plugin_agent.cfg -f
