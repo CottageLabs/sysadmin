@@ -1,0 +1,26 @@
+Gunicorn seems to manage its memory just fine for days, and then at some point
+usage shot up by a gigabyte. Considering our machines usually pin lots of RAM
+to elasticsearch, this can easily use up all the available memory and crash +
+burn.
+
+The crash + burn has not happened yet, so we don't know whether this is some
+form of controlled gunicorn behaviour or not. However, the DOAJ machine did
+reach 94% memory.
+
+The solution is to send a HUP signal to gunicorn, which it interprets as a
+graceful restart - it will restart the workers when they are finished
+processing their current requests (so in practice there should always be
+workers available to server new requests).
+
+If you are running gunicorn manually, just get the PID somehow (ps -ef | grep
+gunicorn and look for the master process) and do kill -HUP [the pid you got].
+
+If you are running your app using supervisord (you should be, if you're using
+gunicorn to deploy it to production!), this is a one-liner to send a HUP to
+gunicorn:
+
+    kill -HUP $(sudo supervisorctl pid doaj)
+
+We should consider automating the solution to this problem using some simple
+memory management monitor or even just a bash script which monitors gunicorn's
+memory usage.
