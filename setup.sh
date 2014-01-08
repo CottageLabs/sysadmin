@@ -24,6 +24,9 @@ adduser cloo sudo
 # but if you're root (should be at this point of script)
 echo "127.0.1.1       "`cat /etc/hostname` >> /etc/hosts
 
+# make some oft-used backup dirs
+mkdir -p /home/cloo/backups/elasticsearch
+mkdir -p /home/cloo/backups/logs
 
 # apt install useful stuff
 apt-get update
