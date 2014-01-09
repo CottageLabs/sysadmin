@@ -23,6 +23,9 @@ Elasticsearch and nginx plugins:
 
     # first, let ourselves run the newrelic plugin as the newrelic user would run it when it's a service
     sudo usermod -a -G newrelic cloo
+    exit # log out of the server, need to re-login to activate the change of groups for the cloo user
+    ssh [the server name or IP]
+    cd /opt/sysadmin/newrelic  # or wherever you cloned the sysadmin repo to - bottom line, get back to the directory of this README file
     sudo chown newrelic:newrelic /var/log/newrelic
     sudo chown newrelic:newrelic /var/run/newrelic
     sudo chmod 775 /var/log/newrelic  # group-writable, so we can try it out as the cloo user
@@ -32,9 +35,10 @@ Elasticsearch and nginx plugins:
     # there should be no errors - if there are, check the config is correct YAML,
     # check your nginx http status path and ES settings, check the nginx error log and the ES error log as needed
 
-6. Set it up as a service if everything is OK and you start seeing data in a couple of minuts on the Newrelic RPM control panel:
+6. Set it up as a service if everything is OK and you start seeing data in a couple of minutes on the Newrelic RPM control panel:
 
     sudo cp /opt/newrelic_plugin_agent/newrelic_plugin_agent.deb /etc/init.d/newrelic_plugin_agent
     sudo chmod a+x /etc/init.d/newrelic_plugin_agent
     sudo update-rc.d newrelic_plugin_agent defaults 95 05
     sudo sysv-rc-conf --list | grep newrelic  # should return something like newrelic-plu (as well as newrelic-sys, the main newrelic monitor)
+    sudo service newrelic_plugin_agent start
