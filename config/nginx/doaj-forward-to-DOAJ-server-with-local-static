@@ -6,8 +6,8 @@ server {
     client_body_buffer_size 128k;
 
     location / {
-        # proxy_pass http://93.93.135.219;
-        proxy_pass http://93.93.131.41;
+        proxy_pass http://93.93.135.219;
+        # proxy_pass http://93.93.131.41;
         proxy_redirect off;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
