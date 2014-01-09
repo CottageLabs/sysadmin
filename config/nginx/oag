@@ -1,0 +1,40 @@
+# You may add here your
+# server {
+#	...
+# }
+# statements for each of your virtual hosts to this file
+
+##
+# You should look at the following URL's in order to grasp a solid understanding
+# of Nginx configuration files in order to fully unleash the power of Nginx.
+# http://wiki.nginx.org/Pitfalls
+# http://wiki.nginx.org/QuickStart
+# http://wiki.nginx.org/Configuration
+#
+# Generally, you will want to move this file somewhere, and start with a clean
+# file but keep this around for reference. Or just disable in sites-enabled.
+#
+# Please see /usr/share/doc/nginx-doc/examples/ for more detailed examples.
+##
+
+server {
+    listen       80;
+    server_name  iioa.cottagelabs.com;
+    rewrite ^ $scheme://oag.cottagelabs.com$request_uri? permanent;
+}
+
+server {
+    listen          80;
+    server_name     www.howopenisit.org howopenisit.org oag.cottagelabs.com 93.93.131.41;
+
+    client_max_body_size 5M;
+    client_body_buffer_size 128k;
+
+    location / {
+        proxy_pass http://localhost:5051/;
+        proxy_redirect off;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}

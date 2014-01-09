@@ -24,11 +24,14 @@ adduser cloo sudo
 # but if you're root (should be at this point of script)
 echo "127.0.1.1       "`cat /etc/hostname` >> /etc/hosts
 
+# make some oft-used backup dirs
+mkdir -p /home/cloo/backups/elasticsearch
+mkdir -p /home/cloo/backups/logs
 
 # apt install useful stuff
 apt-get update
 apt-get -q -y install mcelog  # hardware error decoder / logger
-apt-get -q -y install bpython screen htop nginx git-core curl anacron lm-sensors sysv-rc-conf
+apt-get -q -y install bpython screen htop nginx git-core curl anacron lm-sensors sysv-rc-conf s3cmd
 apt-get -q -y install python-pip python-dev python-setuptools build-essential
 apt-get -q -y install openjdk-6-jdk openjdk-6-jre-headless
 apt-get -q -y install python-software-properties  # ability to add PPA-s for the latest versions of software including the add-apt-repository command
@@ -162,4 +165,4 @@ PasswordAuthentication no
 # See sensor info by running "sensors" from the shell.
 
 
-
+# run s3cmd --configure - take Access and Secret keys from Cottage Labs' AWS account at amazon.cottagelabs.com
