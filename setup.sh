@@ -27,6 +27,7 @@ echo "127.0.1.1       "`cat /etc/hostname` >> /etc/hosts
 # make some oft-used backup dirs
 mkdir -p /home/cloo/backups/elasticsearch
 mkdir -p /home/cloo/backups/logs
+chown -R cloo:cloo /home/cloo/backups
 
 # apt install useful stuff
 apt-get update
@@ -60,8 +61,11 @@ mv ~/supervisord /etc/init.d/supervisord
 chmod a+x /etc/init.d/supervisord
 /usr/sbin/service supervisord stop
 update-rc.d supervisord defaults
-mv /etc/supervisor/supervisord.conf /etc
-ln -s /etc/supervisord.conf /etc/supervisor/supervisord.conf
+mkdir /var/log/supervisor
+mkdir /etc/supervisor/
+mkdir /etc/supervisor/conf.d
+# Path below relative to this script!
+cp config/supervisor/supervisord.conf /etc/supervisord.conf
 /usr/sbin/service supervisord start
 
 
