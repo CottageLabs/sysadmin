@@ -1,6 +1,6 @@
 server {
     listen          80;
-    server_name     doaj.org www.doaj.org 95.85.56.138;
+    server_name     doaj.cottagelabs.com;
 
     client_max_body_size 5M;
     client_body_buffer_size 128k;
@@ -13,18 +13,5 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 	# proxy_buffering off;
-    }
-
-    location  /static {
-        alias /opt/doaj/src/doaj/portality/static;
-        autoindex off;
-        expires max;
-    }
-
-    location /nginx_status {
-        stub_status on;
-        access_log off;
-        allow 127.0.0.1;
-        deny all;
     }
 }

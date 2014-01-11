@@ -1,6 +1,6 @@
 server {
     listen          80;
-    server_name     doaj.org www.doaj.org doaj.cottagelabs.com 95.85.56.138;
+    server_name     doaj.org www.doaj.org 95.85.56.138;
 
     client_max_body_size 5M;
     client_body_buffer_size 128k;
