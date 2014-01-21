@@ -40,8 +40,8 @@ def main(argv=None):
     d_total = d['hits']['total']
     d = d['hits']['hits']
 
-    if s_total <= d_total:
-        abort("Source has less or same number of docs as destination, aborting since your source and destination could be out of sync.")
+    if s_total < d_total:
+        abort("Source has less docs than destination, aborting since your source and destination could be completely out of sync (both have docs than the other one does not). Investigate, fix and rerun.")
 
     removed = 0
     for s_hit in s[:]:
