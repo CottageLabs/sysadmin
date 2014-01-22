@@ -6,6 +6,11 @@ env.use_ssh_config = True  # username, identity file (key), hostnames for machin
 
 # E.g.:
 # Update DOAJ app to HEAD of current git master:
+# fab update_doaj
+# This will update it on all servers specified later in this file
+# (the 2 application servers and the gateway for now).
+
+# If you want to specify which hosts to update it on:
 # fab -H doaj,cl2,doajgate update_doaj
     # (replace ssh names with the ones you would use yourself on the command
     # line with ssh - they come from your own ~/.ssh/config)
