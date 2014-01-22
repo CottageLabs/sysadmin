@@ -58,13 +58,14 @@ env.roledefs.update(
 
 @roles('app', 'gate', 'test')
 def update_sysadmin():
-    with cd(SYSADMIN_SRC_PATH):
-        run('git pull')
+    with warn_only():
+        with cd(SYSADMIN_SRC_PATH):
+            run('git pull', pty=False)
 
 @roles('app', 'gate', 'test')
 def create_sysadmin():
-    with warn_only(): # these commands can fail, it's OK
+    with warn_only():
         with cd('/opt'):
             sudo('mkdir -p sysadmin')
             sudo('chown cloo:cloo sysadmin')
-            run('git clone https://github.com/CottageLabs/sysadmin.git')
+            run('git clone https://github.com/CottageLabs/sysadmin.git', pty=False)
