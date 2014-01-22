@@ -68,8 +68,10 @@ DOAJ_USER_APP_PORT = 5050
 GATE_NGINX_CFG_PREFIX = 'doaj-forward-to-'
 GATE_NGINX_CFG_SUFFIX = '-server-with-local-static'
 
-# Group servers into some roles by default. You can override on the
-# command line using 
+# Used when running tasks directly, e.g. fab update_doaj . Not (yet)
+# used when a task like switch_doaj is calling multiple other tasks
+# programmatically. Enables us to not have to specify "which hosts" 
+# all the time when running Fabric.
 env.roledefs.update(
         {
             'app': [DOAJ_IP, CL2_IP], 
