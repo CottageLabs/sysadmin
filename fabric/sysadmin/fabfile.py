@@ -69,3 +69,14 @@ def create_sysadmin():
             sudo('mkdir -p sysadmin')
             sudo('chown cloo:cloo sysadmin')
             run('git clone https://github.com/CottageLabs/sysadmin.git', pty=False)
+
+@roles('app', 'gate', 'test')
+def apt_install(packages):
+    '''
+    Install one or more software packages across all hosts.
+    :param packages: A space-separated string of package names. Can be just a single name as well.
+    
+    This task will fail immediately if one of the servers fails to install the software and will
+    not proceed with trying to install it on any more servers.
+    '''
+    sudo('apt-get -q -y install ' + packages, pty=False)
