@@ -1,0 +1,45 @@
+server {
+    listen          80;
+    server_name     harvest harvest1 95.85.19.215;
+
+    client_max_body_size 5M;
+    client_body_buffer_size 128k;
+
+    location / {
+        proxy_pass http://localhost:5060/;
+        proxy_redirect off;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    location  /static {
+        alias /opt/harvest/src/harvest/portality/static;
+        autoindex off;
+        expires max;
+    }
+
+    location /nginx_status {
+        stub_status on;
+        access_log off;
+        allow 127.0.0.1;
+        deny all;
+    }
+}
+
+# app debugging port (when another server needs to talk to app directly)
+server {
+    listen          5560;
+    server_name     harvest harvest1 95.85.19.215;
+
+    client_max_body_size 5M;
+    client_body_buffer_size 128k;
+
+    location / {
+        proxy_pass http://localhost:5060/;
+        proxy_redirect off;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
