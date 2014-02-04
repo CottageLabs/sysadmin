@@ -117,8 +117,8 @@ def switch_doaj(from_, to_, dont_sync_suggestions=None):
 @roles('app', 'gate')
 def update_doaj():
     with cd(DOAJ_PATH_SRC):
-        run('git pull')
-        run('git submodule update')
+        run('git pull', pty=False)
+        run('git submodule update', pty=False)
 
 def _get_hosts(from_, to_):
     FROM = from_.upper()
@@ -129,18 +129,22 @@ def _get_hosts(from_, to_):
     target_host = APP_SERVER_NAMES[TO]
     return FROM, source_host, TO, target_host
     
+@roles('app')
 def push_xml_uploads():
     # TODO: move the hardcoded dirs and files to python constants to top
     # of file .. bit pointless for now as the scheduled backups
     # themselves have those bits hardcoded too
     run("/home/cloo/backups/backup2s3.sh {doaj_path}/upload/ /home/cloo/backups/doaj-xml-uploads/ dummy s3://doaj-xml-uploads >> /home/cloo/backups/logs/doaj-xml-uploads_`date +%F_%H%M`.log 2>&1"
-            .format(doaj_path=DOAJ_PATH_SRC)
+            .format(doaj_path=DOAJ_PATH_SRC),
+        pty=False
     )
 
+@roles('app')
 def pull_xml_uploads():
     # TODO: same as push_xml_uploads
     run("/home/cloo/backups/restore_from_s3.sh s3://doaj-xml-uploads {doaj_path}/upload/ /home/cloo/backups/doaj-xml-uploads/"
-            .format(doaj_path=DOAJ_PATH_SRC)
+            .format(doaj_path=DOAJ_PATH_SRC),
+        pty=False
     )
 
 @roles('gate')
@@ -151,7 +155,14 @@ def gate_switch_doaj(from_, to_):
         # determine which config file will be used
         old_nginx_conf = GATE_NGINX_CFG_PREFIX + FROM + GATE_NGINX_CFG_SUFFIX
         new_nginx_conf = GATE_NGINX_CFG_PREFIX + TO + GATE_NGINX_CFG_SUFFIX
-        raw_input('Going to enable {new} and disable {old} nginx configs on the gateway. <Enter> to proceed, Ctrl+C to terminate.'
+        print
+        raw_input("""
+Nginx configurations will now be:
+
+ENABLED: {new}
+DISABLED: {old}
+
+on the gateway. <Enter> to proceed, Ctrl+C to terminate."""
                 .format(new=new_nginx_conf, old=old_nginx_conf)
         )
         sudo('ln -s ../sites-available/{new} sites-enabled/{new}'.format(new=new_nginx_conf))

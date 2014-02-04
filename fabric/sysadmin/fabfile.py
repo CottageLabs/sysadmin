@@ -63,6 +63,12 @@ def update_sysadmin():
             run('git pull', pty=False)
 
 @roles('app', 'gate', 'test')
+def push_sysadmin():
+    with warn_only():
+        with cd(SYSADMIN_SRC_PATH):
+            run('git push', pty=False)
+
+@roles('app', 'gate', 'test')
 def create_sysadmin():
     with warn_only():
         with cd('/opt'):
