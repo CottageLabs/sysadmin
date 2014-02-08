@@ -61,7 +61,7 @@ def main(argv=None):
 
     dry_run = args.dry_run
 
-    sleep_seconds = args.sleep if args.sleep else int(str(batch_size)[0]) # Default case: first digit of batch size. 2 for 20 items, 2 for 2000 items, 2 for 20000 items. 3 for 30 items, 4 for 400 items.
+    sleep_seconds = args.sleep if args.sleep or args.sleep == 0 else int(str(batch_size)[0]) # Default case: first digit of batch size. 2 for 20 items, 2 for 2000 items, 2 for 20000 items. 3 for 30 items, 4 for 400 items.
     
     no_of_lines = batch_size * 2  # 2 actual lines get read in for every item in the batch
 
