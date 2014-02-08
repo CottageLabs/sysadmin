@@ -26,6 +26,7 @@ echo "127.0.1.1       "`cat /etc/hostname` >> /etc/hosts
 
 # make some oft-used backup dirs
 mkdir -p /home/cloo/backups/elasticsearch
+mkdir -p /home/cloo/backups/elasticsearch-es-exporter
 mkdir -p /home/cloo/backups/logs
 chown -R cloo:cloo /home/cloo/backups
 
@@ -79,9 +80,9 @@ ufw enable
 
 # get elasticsearch
 cd /opt
-curl -L https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-0.90.5.tar.gz -o elasticsearch.tar.gz
+curl -L https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-0.90.7.tar.gz -o elasticsearch.tar.gz
 tar -xzvf elasticsearch.tar.gz
-ln -s elasticsearch-0.90.5 elasticsearch
+ln -s elasticsearch-0.90.7 elasticsearch
 rm elasticsearch.tar.gz
 cd elasticsearch/bin
 git clone git://github.com/elasticsearch/elasticsearch-servicewrapper.git
@@ -91,7 +92,8 @@ cd ../
 rm -R elasticsearch-servicewrapper
 ln -s /opt/elasticsearch/bin/service/elasticsearch /etc/init.d/elasticsearch
 update-rc.d elasticsearch defaults
-/etc/init.d/elasticsearch start
+cd /opt/elasticsearch
+./bin/plugin --install knapsack --url http://bit.ly/K8QwOJ  # need a new version for ES v. 0.90.10+! see https://github.com/jprante/elasticsearch-knapsack
 # elasticsearch settings
 # vim config/elasticsearch.yml and uncomment bootstrap.mlockall: true
 # and uncomment cluster.name: elasticsearch (and change cluster name if necessary)
@@ -105,10 +107,13 @@ update-rc.d elasticsearch defaults
 # * soft  nofile  1024000
 # * hard  memlock unlimited
 # * soft  memlock unlimited
-# and then vim /etc/pam.d/common-session and /etc/pamd.d/common-session-noninteractive
+# and then vim /etc/pam.d/common-session and /etc/pam.d/common-session-noninteractive
 # and put the following in it:
 # session required      pam_limits.so
-
+sudo /etc/init.d/elasticsearch start
+# this command will always tell you "Running with PID XXX". Even though plugins could cause it to fail to start. So wait for 15 seconds, then try
+# curl localhost:9200
+# you should get a response, otherwise something's wrong, check /opt/elasticsearch/logs.
 
 # edit the ssh settings
 vim /etc/ssh/sshd_config
@@ -119,11 +124,17 @@ PasswordAuthentication no
 
 
 # install node
-#apt-get install python-software-properties
-#apt-add-repository ppa:chris-lea/node.js
-#apt-get update
-#apt-get install nodejs npm
-#npm install sqlite3
+apt-get install python-software-properties g++ make
+apt-add-repository ppa:chris-lea/node.js
+apt-get update
+apt-get install nodejs
+npm install sqlite3
+mkdir /home/cloo/elasticsearch-exporter-src
+cd /home/cloo/elasticsearch-exporter-src
+npm -g install elasticsearch-exporter --production
+cd /home/cloo
+ln -s elasticsearch-exporter-src/node_modules/elasticsearch-exporter/exporter.js elasticsearch-exporter
+chown -R cloo:cloo elasticsearch-exporter*
 
 
 # install php stuff
