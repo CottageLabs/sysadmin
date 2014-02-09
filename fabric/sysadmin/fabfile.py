@@ -40,6 +40,7 @@ env.key_filename.extend(
 
 DOAJ_IP = '93.93.135.219'
 CL2_IP = '93.93.131.41'
+YONCE_IP = '95.85.59.151'
 DOAJGATE_IP = '95.85.56.138'
 MARK_TEST_IP = '93.93.131.120'
 RICHARD_TEST_IP = '93.93.131.168'
@@ -50,7 +51,7 @@ SYSADMIN_SRC_PATH = '/opt/sysadmin'  # path on remote servers to the sysadmin re
 
 env.roledefs.update(
         {
-            'app': [CL_WEBSITE_IP, ARTTACTIC_IP, DOAJ_IP, CL2_IP], 
+            'app': [CL_WEBSITE_IP, ARTTACTIC_IP, DOAJ_IP, CL2_IP, YONCE_IP], 
             'gate': [DOAJGATE_IP],
             'test': [MARK_TEST_IP, RICHARD_TEST_IP]
         }
@@ -66,7 +67,7 @@ def update_sysadmin():
 def push_sysadmin():
     with warn_only():
         with cd(SYSADMIN_SRC_PATH):
-            run('git push', pty=False)
+            run('git push')
 
 @roles('app', 'gate', 'test')
 def create_sysadmin():

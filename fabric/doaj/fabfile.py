@@ -54,8 +54,9 @@ env.key_filename.extend(
 
 DOAJ_IP = '93.93.135.219'
 CL2_IP = '93.93.131.41'
+YONCE_IP = '95.85.59.151'
 DOAJGATE_IP = '95.85.56.138'
-APP_SERVER_NAMES = {'DOAJ': DOAJ_IP, 'CL2': CL2_IP}  # the gateway nginx config files are named after which app server the gateway directs traffic to
+APP_SERVER_NAMES = {'DOAJ': DOAJ_IP, 'CL2': CL2_IP, 'YONCE', YONCE_IP}  # the gateway nginx config files are named after which app server the gateway directs traffic to
 
 env.hosts = [DOAJGATE_IP]
 
@@ -74,7 +75,7 @@ GATE_NGINX_CFG_SUFFIX = '-server-with-local-static'
 # all the time when running Fabric.
 env.roledefs.update(
         {
-            'app': [DOAJ_IP, CL2_IP], 
+            'app': [DOAJ_IP, CL2_IP, YONCE_IP], 
             'gate': [DOAJGATE_IP]
         }
 )
