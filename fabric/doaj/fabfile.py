@@ -1,4 +1,4 @@
-from fabric.api import env, run, sudo, cd, abort, roles, execute
+from fabric.api import env, run, sudo, cd, abort, roles, execute, warn_only
 
 env.use_ssh_config = True  # username, identity file (key), hostnames for machines will all be loaded from ~/.ssh/config
 # This means that you run this script like this:
@@ -56,7 +56,7 @@ DOAJ_IP = '93.93.135.219'
 CL2_IP = '93.93.131.41'
 YONCE_IP = '95.85.59.151'
 DOAJGATE_IP = '95.85.56.138'
-APP_SERVER_NAMES = {'DOAJ': DOAJ_IP, 'CL2': CL2_IP, 'YONCE', YONCE_IP}  # the gateway nginx config files are named after which app server the gateway directs traffic to
+APP_SERVER_NAMES = {'DOAJ': DOAJ_IP, 'CL2': CL2_IP, 'YONCE': YONCE_IP}  # the gateway nginx config files are named after which app server the gateway directs traffic to
 
 env.hosts = [DOAJGATE_IP]
 
@@ -92,8 +92,10 @@ def switch_doaj(from_, to_, dont_sync_suggestions=None):
     # TODO: fix this calling of tasks with execute everywhere
     app_servers = [source_host, target_host]
 
-    execute(update_doaj, hosts=app_servers + [DOAJGATE_IP])
+    execute(update_doaj, hosts=[target_host])  # do not update the source server, may break the live site while we're preparing the new server
+                                                            # the gateway serves static files like Javascript so it should not be updated till the end either
     raw_input('Everything OK, no unexpected changes or commits present? Press <Enter>. If not, press Ctrl+C to terminate now.')
+    raw_input('Make sure settings.py and especially secret_settings.py are correct on {0}. <Enter> to continue when you\'ve done that.'.format(to_))
     if not dont_sync_suggestions:
         sync_suggestions(from_, to_)
     # sync xml uploads
@@ -105,6 +107,7 @@ def switch_doaj(from_, to_, dont_sync_suggestions=None):
     execute(count_journals, hosts=app_servers)
     execute(count_articles, hosts=app_servers)
     raw_input('Journal and article counts equal? Press <Enter>. If not, press Ctrl+C to terminate now.')
+    execute(reload_webserver, hosts=[target_host])
     execute(check_doaj_running, hosts=app_servers)
     raw_input('Is the app running on port {app_port} on all app servers as needed by nginx? Press <Enter>. If not, press Ctrl+C to terminate now.'
             .format(app_port=DOAJ_USER_APP_PORT)
@@ -112,14 +115,17 @@ def switch_doaj(from_, to_, dont_sync_suggestions=None):
     execute(print_doaj_app_config, hosts=app_servers)
     raw_input('Is the config correct for all application servers? Press <Enter>. If not, go fix it and *then* press <Enter>. Or Ctrl+C to terminate now.')
     execute(gate_switch_doaj, from_=from_, to_=to_, hosts=[DOAJGATE_IP])
-    # TODO reload application itself by sending HUP to gunicorn! Need to
-    # upgrade supervisord on CL2 first though.
+    execute(update_doaj, hosts=[DOAJGATE_IP])  # update static files on the gateway
 
 @roles('app', 'gate')
 def update_doaj():
     with cd(DOAJ_PATH_SRC):
+        run('git stash')
+        run('git checkout master')
         run('git pull', pty=False)
         run('git submodule update', pty=False)
+        with warn_only():
+            run('git stash apply')
 
 def _get_hosts(from_, to_):
     FROM = from_.upper()
@@ -183,7 +189,7 @@ def sync_suggestions(from_, to_):
     raw_input('Suggestion counts OK? Press <Enter>. If not, press Ctrl+C to terminate now.')
 
 def _sync_suggestions(FROM):
-    run('/opt/sysadmin/backup/sync_doaj_suggestions.py "http://{FROM}:{app_port}/query/suggestion?size={suggestion_count}" "http://localhost:{app_port}/query/suggestion?size={suggestion_count}"'
+    run('/opt/sysadmin/backup/elasticsearch/sync_doaj_suggestions.py "http://{FROM}:{app_port}/query/suggestion?size={suggestion_count}" "http://localhost:{app_port}/query/suggestion?size={suggestion_count}"'
             .format(FROM=APP_SERVER_NAMES[FROM], app_port=DOAJ_APP_PORT, suggestion_count=100000)
     )
 
@@ -214,3 +220,7 @@ def print_doaj_app_config():
     for file_, keys in print_keys.items():
         for key in keys:
             run('grep {key} {doaj_path}/portality/{file_}'.format(file_=file_, key=key, doaj_path=DOAJ_PATH_SRC))
+
+@roles('app')
+def reload_webserver():
+    sudo('kill -HUP $(sudo supervisorctl pid doaj)')
