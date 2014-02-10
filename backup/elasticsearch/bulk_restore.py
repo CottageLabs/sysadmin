@@ -117,9 +117,8 @@ def main(argv=None):
     with open(data_filename, 'rb') as i:
         counter = 0
         while True:
-            done = counter * batch_size
             counter += 1
-            print 'On batch', counter, '. Done {0} items so far.'.format(done)
+            print 'On batch', counter, '. Done {0} items so far.'.format(total_counter / 2.0)
             batch = []
             cur_no_of_lines = 0
             for line in i:
