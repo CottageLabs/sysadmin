@@ -52,13 +52,11 @@ env.key_filename.extend(
 )
 
 
-DOAJ_IP = '93.93.135.219'
-CL2_IP = '93.93.131.41'
 YONCE_IP = '95.85.59.151'
-DOAJGATE_IP = '95.85.56.138'
-APP_SERVER_NAMES = {'DOAJ': DOAJ_IP, 'CL2': CL2_IP, 'YONCE': YONCE_IP}  # the gateway nginx config files are named after which app server the gateway directs traffic to
+CLGATE1_IP = '95.85.56.138'
+APP_SERVER_NAMES = {'YONCE': YONCE_IP}  # the gateway nginx config files are named after which app server the gateway directs traffic to
 
-env.hosts = [DOAJGATE_IP]
+env.hosts = [CLGATE1_IP]
 
 DOAJ_PATH_SRC = '/opt/doaj/src/doaj'  # path on remote servers to the DOAJ app
 DOAJ_APP_PORT = 5550  # servers can access the application directly at 5550, the normal port is 5050
@@ -75,8 +73,8 @@ GATE_NGINX_CFG_SUFFIX = '-server-with-local-static'
 # all the time when running Fabric.
 env.roledefs.update(
         {
-            'app': [DOAJ_IP, CL2_IP, YONCE_IP], 
-            'gate': [DOAJGATE_IP]
+            'app': [YONCE_IP], 
+            'gate': [CLGATE1_IP]
         }
 )
 
@@ -114,8 +112,8 @@ def switch_doaj(from_, to_, dont_sync_suggestions=None):
     )
     execute(print_doaj_app_config, hosts=app_servers)
     raw_input('Is the config correct for all application servers? Press <Enter>. If not, go fix it and *then* press <Enter>. Or Ctrl+C to terminate now.')
-    execute(gate_switch_doaj, from_=from_, to_=to_, hosts=[DOAJGATE_IP])
-    execute(update_doaj, hosts=[DOAJGATE_IP])  # update static files on the gateway
+    execute(gate_switch_doaj, from_=from_, to_=to_, hosts=[CLGATE1_IP])
+    execute(update_doaj, hosts=[CLGATE1_IP])  # update static files on the gateway
 
 @roles('app', 'gate')
 def update_doaj():
