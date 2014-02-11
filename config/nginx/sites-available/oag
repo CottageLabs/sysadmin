@@ -17,31 +17,18 @@
 # Please see /usr/share/doc/nginx-doc/examples/ for more detailed examples.
 ##
 
-#server {
-#    listen          5555;
-#    server_name     oag.cottagelabs.com 93.93.131.41;
-#
-#    client_max_body_size 5M;
-#    client_body_buffer_size 128k;
-#
-#    location / {
-#        proxy_pass http://localhost:5555/;
-#        proxy_redirect off;
-#        proxy_set_header Host $host;
-#        proxy_set_header X-Real-IP $remote_addr;
-#        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-#    }
-#}
+server {
+    listen       80;
+    server_name  iioa.cottagelabs.com;
+    rewrite ^ $scheme://oag.cottagelabs.com$request_uri? permanent;
+}
 
 server {
     listen          80;
-    server_name     flower.oag.cottagelabs.com;
-
-    client_max_body_size 5M;
-    client_body_buffer_size 128k;
+    server_name     www.howopenisit.org howopenisit.org oag.cottagelabs.com 93.93.131.41;
 
     location / {
-        proxy_pass http://95.85.59.151/;
+        proxy_pass http://localhost:5051/;
         proxy_redirect off;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;

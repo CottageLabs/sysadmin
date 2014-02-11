@@ -2,9 +2,6 @@ server {
     listen          80;
     server_name     www.howopenisit.org howopenisit.org oag.cottagelabs.com;
 
-    client_max_body_size 5M;
-    client_body_buffer_size 128k;
-
     location / {
         proxy_pass http://95.85.59.151;
         proxy_redirect off;
