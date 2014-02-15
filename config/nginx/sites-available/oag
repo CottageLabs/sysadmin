@@ -21,11 +21,16 @@ server {
     listen       80;
     server_name  iioa.cottagelabs.com;
     rewrite ^ $scheme://oag.cottagelabs.com$request_uri? permanent;
+    access_log /var/log/nginx/oag.access.log;
+    error_log /var/log/nginx/oag.error.log;
 }
 
 server {
     listen          80;
     server_name     www.howopenisit.org howopenisit.org oag.cottagelabs.com test.oag.cottagelabs.com;
+
+    access_log /var/log/nginx/oag.access.log;
+    error_log /var/log/nginx/oag.error.log;
 
     set_real_ip_from 95.85.56.138;
 

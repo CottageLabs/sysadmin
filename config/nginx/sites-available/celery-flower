@@ -37,6 +37,9 @@ server {
     listen          80;
     server_name     flower.oag.cottagelabs.com;
 
+    access_log /var/log/nginx/celery-flower.access.log;
+    error_log /var/log/nginx/celery-flower.error.log;
+
     location / {
         proxy_pass http://localhost:5555/;
         proxy_redirect off;
