@@ -2,6 +2,9 @@ server {
     listen          80;
     server_name     doaj.cottagelabs.com;
 
+    access_log /var/log/nginx/test-doaj-to-trich-server.access.log;
+    error_log /var/log/nginx/test-doaj-to-trich-server.error.log;
+
     location / {
 	proxy_pass http://93.93.131.168; # Richard's test server
         proxy_redirect off;

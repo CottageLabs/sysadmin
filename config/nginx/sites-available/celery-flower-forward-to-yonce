@@ -37,6 +37,9 @@ server {
     listen          80;
     server_name     flower.oag.cottagelabs.com;
 
+    access_log /var/log/nginx/celery-forward-to-yonce.access.log;
+    error_log /var/log/nginx/celery-forward-to-yonce.error.log;
+
     location / {
         proxy_pass http://95.85.59.151/;
         proxy_redirect off;

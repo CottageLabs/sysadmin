@@ -2,6 +2,11 @@ server {
     listen          80;
     server_name     doaj.org www.doaj.org 95.85.56.138;
 
+
+    access_log /var/log/nginx/doaj-forward-to-YONCE-with-local-static.access.log;
+    error_log /var/log/nginx/doaj-forward-to-YONCE-with-local-static.error.log;
+
+
     location / {
         proxy_pass http://95.85.59.151;
         proxy_redirect off;
