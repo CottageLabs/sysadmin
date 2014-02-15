@@ -35,7 +35,7 @@
 
 server {
     listen          80;
-    server_name     flower.oag.cottagelabs.com;
+    server_name     flower.oag.cottagelabs.com flower.test.oag.cottagelabs.com;
 
     access_log /var/log/nginx/celery-flower.access.log;
     error_log /var/log/nginx/celery-flower.error.log;
