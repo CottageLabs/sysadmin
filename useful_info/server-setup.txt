@@ -1,0 +1,7 @@
+Servers should have ports 22, 80, 443 open.
+
+Test servers should have ports 9200 (ES) and 6379 (redis) open in
+addition.
+
+Test servers should also have the bind interface line in the redis
+config uncommented so that the redis server answers to eth0:6379.
