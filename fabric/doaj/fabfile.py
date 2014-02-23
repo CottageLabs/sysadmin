@@ -54,7 +54,9 @@ env.key_filename.extend(
 
 YONCE_IP = '95.85.59.151'
 CLGATE1_IP = '95.85.56.138'
+RICHARD_TEST_IP = '93.93.131.168'
 APP_SERVER_NAMES = {'YONCE': YONCE_IP}  # the gateway nginx config files are named after which app server the gateway directs traffic to
+TEST_SERVER_NAMES = {'RICHARD_TEST': RICHARD_TEST_IP}
 
 env.hosts = [CLGATE1_IP]
 
@@ -74,7 +76,8 @@ GATE_NGINX_CFG_SUFFIX = '-server-with-local-static'
 env.roledefs.update(
         {
             'app': [YONCE_IP], 
-            'gate': [CLGATE1_IP]
+            'gate': [CLGATE1_IP],
+            'test': [RICHARD_TEST_IP]
         }
 )
 
@@ -116,14 +119,19 @@ def switch_doaj(from_, to_, dont_sync_suggestions=None):
     execute(update_doaj, hosts=[CLGATE1_IP])  # update static files on the gateway
 
 @roles('app', 'gate')
-def update_doaj():
+def update_doaj(branch='master'):
     with cd(DOAJ_PATH_SRC):
         run('git stash')
-        run('git checkout master')
+        run('git checkout ' + branch)
         run('git pull', pty=False)
         run('git submodule update', pty=False)
         with warn_only():
             run('git stash apply')
+
+@roles('test')
+def update_test():
+    update_doaj('phase2')
+    sudo('sudo supervisorctl restart doaj-dev')
 
 def _get_hosts(from_, to_):
     FROM = from_.upper()
