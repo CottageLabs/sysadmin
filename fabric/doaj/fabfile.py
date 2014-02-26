@@ -82,6 +82,7 @@ env.roledefs.update(
 )
 
 def switch_doaj(from_, to_, dont_sync_suggestions=None):
+    '''Run this to switch from using one app server to another for the live DOAJ.'''
     FROM, source_host, TO, target_host = _get_hosts(from_, to_)
 
     # set the hosts to the 2 application servers passed in
@@ -129,8 +130,9 @@ def update_doaj(branch='master'):
             run('git stash apply')
 
 @roles('test')
-def update_test():
-    update_doaj('phase2')
+def update_test(dev_branch="phase2"):
+    '''Update DOAJ on the test server. Optionally takes name of dev branch, default "phase2".'''
+    update_doaj(dev_branch)
     sudo('sudo supervisorctl restart doaj-dev')
 
 def _get_hosts(from_, to_):
