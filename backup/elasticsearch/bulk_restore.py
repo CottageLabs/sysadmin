@@ -47,6 +47,7 @@ def main(argv=None):
     parser.add_argument("mapping_filename")
     parser.add_argument("data_filename")
     BATCH_SIZE_DEFAULT = 2000
+    parser.add_argument("-i", "--index", help="Pass the index name when you are restoring a single index.")
     parser.add_argument("-b", "--batch-size", type=int, help="Size of each batch of items sent to ES. Default: {0}".format(BATCH_SIZE_DEFAULT))
     parser.add_argument("-t", "--dry-run", action="store_true")
     parser.add_argument("-y", "--destroy-all", action="store_true", help="Pass this to delete all indices in the target ES instance and skip the question this script would otherwise ask about this.")
@@ -57,6 +58,9 @@ def main(argv=None):
     mapping_filename = args.mapping_filename
     data_filename = args.data_filename
     
+    index = args.index
+    print index
+    sys.exit(0)
     batch_size = args.batch_size if args.batch_size else BATCH_SIZE_DEFAULT
 
     dry_run = args.dry_run
@@ -67,6 +71,8 @@ def main(argv=None):
 
     if dry_run:
         print 'THIS IS A DRY RUN. No operations will actually be performed, including deleting data, updating mappings and sending data to ES in bulk.'
+    if index:
+        print 'INDEX:', index
     print 'BATCH SIZE:', batch_size
     print 'SLEEPING for {0} seconds between batches.'.format(sleep_seconds)
 
@@ -82,14 +88,17 @@ def main(argv=None):
             delete = True if delete == "yes, destroy all data in ES" else False
 
     if delete:
-        print 'DELETING all data in ES.'
+        print 'DELETING all data in ES{extra}.'.format(extra=', Index: ' + index)
     else:
         print 'NOT DELETING any data in ES.'
 
     deleted = False
     if not dry_run:
         if delete:
-            r = requests.delete(config['ELASTIC_SEARCH_HOST'])
+            if index:
+                r = requests.delete(config['ELASTIC_SEARCH_HOST'] + '/' + index)
+            else:
+                r = requests.delete(config['ELASTIC_SEARCH_HOST'])
             if r.status_code == 200:
                 print '  Deleted successfully.'
             else:
@@ -106,6 +115,8 @@ def main(argv=None):
     else:
         with open(mapping_filename, 'rb') as i:
             data = json.loads(i.read())
+            if index:
+                data = {index: data}
             if dry_run:
                 print '  DRY RUN: Mapping loaded successfully from file, but not going to send it to ES.'
             else:
