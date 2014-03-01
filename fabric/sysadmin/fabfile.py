@@ -1,5 +1,7 @@
 from fabric.api import env, run, sudo, cd, abort, roles, execute, warn_only
 
+import time
+
 env.use_ssh_config = True  # username, identity file (key), hostnames for machines will all be loaded from ~/.ssh/config
 # This means that you run this script like this:
 # fab -H <host1,host2> <task_name>
@@ -37,24 +39,32 @@ env.key_filename.extend(
     ]
 )
 
+servers = {
+    'yonce': '95.85.59.151',
+    'clgate1': '95.85.56.138',
+    'mark_test': '93.93.131.120',
+    'richard_test': '93.93.131.168',
+    'pinky': '188.226.153.213',
+    'cl_website': '46.235.224.100',
+    'arttactic': '46.235.224.107',
+}
 
-YONCE_IP = '95.85.59.151'
-CLGATE1_IP = '95.85.56.138'
-MARK_TEST_IP = '93.93.131.120'
-RICHARD_TEST_IP = '93.93.131.168'
-PINKY_IP = '188.226.153.213'
-CL_WEBSITE_IP = '46.235.224.100'
-ARTTACTIC_IP = '46.235.224.107'
+all_servers = []
+for name, server in servers.items():
+    if server not in all_servers:
+        all_servers.append(server)
 
 SYSADMIN_SRC_PATH = '/opt/sysadmin'  # path on remote servers to the sysadmin repo
+ES_EXPORTER_BACKUPS_PATH = '/home/cloo/backups/elasticsearch-es-exporter'
 
 env.roledefs.update(
         {
-            'app': [CL_WEBSITE_IP, ARTTACTIC_IP, YONCE_IP], 
-            'gate': [CLGATE1_IP],
-            'test': [MARK_TEST_IP, RICHARD_TEST_IP, PINKY_IP]
+            'app': [servers['cl_website'], servers['arttactic'], servers['yonce']], 
+            'gate': [servers['clgate1']],
+            'test': [servers['mark_test'], servers['richard_test'], servers['pinky']]
         }
 )
+
 
 @roles('app', 'gate', 'test')
 def update_sysadmin():
@@ -86,3 +96,48 @@ def apt_install(packages):
     not proceed with trying to install it on any more servers.
     '''
     sudo('apt-get -q -y install ' + packages, pty=False)
+
+def _get_hosts(from_, to_):
+    FROM = from_.lower()
+    TO = to_.lower()
+    if FROM not in servers or TO not in servers:
+        abort('only the following server names are valid: ' + ', '.join(servers))
+    source_host = servers[FROM]
+    target_host = servers[TO]
+    return FROM, source_host, TO, target_host
+
+# call this like:
+# fab transfer_index:index=doaj,from_=yonce,to_=pinky
+def transfer_index(index, from_, to_, filename=None):
+    '''Copy an index from one machine to another. Requires elasticsearch-exporter (nodejs app) on source machine.'''
+    FROM, source_host, TO, target_host = _get_hosts(from_, to_)
+
+    if not filename:
+        timestamp = time.strftime('%Y-%m-%d_%H%M')
+        filename = '{index}_{timestamp}'.format(index=index, timestamp=timestamp)
+
+    execute(backup_index_locally, index=index, directory=ES_EXPORTER_BACKUPS_PATH, filename=filename, hosts=[source_host])
+    execute(secure_copy, filename_pattern=filename + '*', target_host=target_host, remote_path=ES_EXPORTER_BACKUPS_PATH, hosts=[source_host])
+    execute(__uncompress_backups, filename=filename, hosts=[target_host])
+    execute(__es_bulk_restore, index=index, filename=filename, hosts=[target_host])
+
+def backup_index_locally(index, directory, filename):
+    with cd(directory):
+        run('node --nouse-idle-notification --expose-gc ~/elasticsearch-exporter -i {index} -g {filename} -m 0.6'.format(index=index, filename=filename))
+
+def secure_copy(filename_pattern, target_host, remote_path):
+    print 'If the next command fails, you\'ll need to set up proper ssh keys on the servers so that the source can connect to the target. You will be asked for the key\'s passphrase!'
+    with cd(ES_EXPORTER_BACKUPS_PATH):
+        run('scp {filename_pattern} cloo@{target_host}:{remote_path}'.format(filename_pattern=filename_pattern, target_host=target_host, remote_path=remote_path))
+
+def __es_bulk_restore(index, filename):
+    with cd(ES_EXPORTER_BACKUPS_PATH):
+        thescript = SYSADMIN_SRC_PATH + '/backup/elasticsearch/bulk_restore.py'
+        mapping_filename = ES_EXPORTER_BACKUPS_PATH + '/' + filename + '.meta'
+        data_filename = ES_EXPORTER_BACKUPS_PATH + '/' + filename + '.data'
+        run('python {thescript} -i {index} {mapping_filename} {data_filename}'.format(thescript=thescript, index=index, mapping_filename=mapping_filename, data_filename=data_filename))
+
+def __uncompress_backups(filename):
+    with cd(ES_EXPORTER_BACKUPS_PATH):
+        run('mv {filename}.data {filename}.data.gz'.format(filename=filename))
+        run('gunzip {filename}.data.gz'.format(filename=filename))
