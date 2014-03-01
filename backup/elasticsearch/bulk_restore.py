@@ -74,6 +74,11 @@ def main(argv=None):
     print 'BATCH SIZE:', batch_size
     print 'SLEEPING for {0} seconds between batches.'.format(sleep_seconds)
 
+    if index:
+        delete_what = 'the ' + index + ' index'
+    else:
+        delete_what = 'all indices'
+
     if args.destroy_all:
         delete = True
     else:
@@ -82,11 +87,11 @@ def main(argv=None):
         else:
             # we don't know, we need to ask
             print 'If you want to update the mappings you will have to reindex the data. With this in mind...'
-            delete = raw_input('  Do you want to delete all indices now? Enter "yes, destroy all data in ES" to do so, or "n" to proceed without deleting anything: ')
-            delete = True if delete == "yes, destroy all data in ES" else False
+            delete = raw_input('  Do you want to delete {delete_what} now? Enter "yes, destroy all the data" to do so, or "n" to proceed without deleting anything: '.format(delete_what=delete_what))
+            delete = True if delete == "yes, destroy all the data" else False
 
     if delete:
-        print 'DELETING all data in ES{extra}.'.format(extra=', Index: ' + index)
+        print 'DELETING all data in {delete_what}.'.format(delete_what=delete_what)
     else:
         print 'NOT DELETING any data in ES.'
 
