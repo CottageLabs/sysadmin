@@ -7,7 +7,7 @@ require_python_version_major=2
 require_python_version_minor=6
 # check the version of python available
 printf "    Python $require_python_version_major.$require_python_version_minor required... "
-if python -c "import sys; exit(1) if sys.version_info.major != $require_python_version_major else exit(1) if sys.version_info.minor != $require_python_version_minor else exit(0)"; then
+if python -c "import sys; exit(1) if sys.version_info.major != $require_python_version_major else exit(1) if sys.version_info.minor < $require_python_version_minor else exit(0)"; then
     echo "OK, found it."
 else
     echo "NOT FOUND! Install it and try again."
@@ -89,7 +89,6 @@ echo
 echo "Done trying to install lxml, proceeding with installing Python-based requirements."
 echo
 pip install -e .
-pip install gunicorn
 echo
 echo
 sudo supervisorctl reread || die "Couldn't reread the supervisord config. Do you have supervisord? Install it if not."
