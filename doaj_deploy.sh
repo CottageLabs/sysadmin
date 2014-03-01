@@ -97,7 +97,7 @@ echo
 sudo supervisorctl status
 cat << EOF
 
-All done. The supervisord status command output you just saw should look
+Setup done. The supervisord status command output you just saw should look
 something like this:
 
 doaj                              RUNNING    pid 5958, uptime 0:01:14
@@ -105,3 +105,9 @@ doaj                              RUNNING    pid 5958, uptime 0:01:14
     You can test the app by requesting the homepage:
     curl localhost:5050
 EOF
+echo "Now installing nginx config"
+sudo cp /opt/sysadmin/config/nginx/sites-available/doaj /etc/nginx/sites-available/doaj
+cd /etc/nginx/sites-enabled
+sudo ln -s ../sites-available/doaj doaj
+sudo nginx -t || die "Nginx configuration test failed!"
+sudo nginx -s reload
