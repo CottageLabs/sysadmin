@@ -59,8 +59,6 @@ def main(argv=None):
     data_filename = args.data_filename
     
     index = args.index
-    print index
-    sys.exit(0)
     batch_size = args.batch_size if args.batch_size else BATCH_SIZE_DEFAULT
 
     dry_run = args.dry_run
