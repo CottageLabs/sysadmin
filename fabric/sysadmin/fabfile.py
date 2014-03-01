@@ -42,6 +42,7 @@ YONCE_IP = '95.85.59.151'
 CLGATE1_IP = '95.85.56.138'
 MARK_TEST_IP = '93.93.131.120'
 RICHARD_TEST_IP = '93.93.131.168'
+PINKY_IP = '188.226.153.213'
 CL_WEBSITE_IP = '46.235.224.100'
 ARTTACTIC_IP = '46.235.224.107'
 
@@ -51,7 +52,7 @@ env.roledefs.update(
         {
             'app': [CL_WEBSITE_IP, ARTTACTIC_IP, YONCE_IP], 
             'gate': [CLGATE1_IP],
-            'test': [MARK_TEST_IP, RICHARD_TEST_IP]
+            'test': [MARK_TEST_IP, RICHARD_TEST_IP, PINKY_IP]
         }
 )
 
