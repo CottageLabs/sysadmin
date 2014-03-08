@@ -133,10 +133,10 @@ def update_doaj(branch='master'):
             run('git stash apply')
 
 @roles('staging')
-def try_on_staging():
+def try_on_staging(branch='master'):
     '''Update the staging server with the latest live code and reload the app.'''
-    execute(update_doaj, hosts=env.roledefs['staging'])
-    execute(reload_webserver, hosts=env.roledefs['staging'])
+    execute(update_doaj, branch=branch, hosts=env.roledefs['staging'])
+    execute(reload_webserver, supervisor_doaj_task_name='doaj-staging', hosts=env.roledefs['staging'])
 
 @roles('test')
 def update_test(dev_branch="phase2"):
@@ -239,5 +239,5 @@ def print_doaj_app_config():
             run('grep {key} {doaj_path}/portality/{file_}'.format(file_=file_, key=key, doaj_path=DOAJ_PATH_SRC))
 
 @roles('app')
-def reload_webserver():
-    sudo('kill -HUP $(sudo supervisorctl pid doaj)')
+def reload_webserver(supervisor_doaj_task_name='doaj'):
+    sudo('kill -HUP $(sudo supervisorctl pid {0})'.format(supervisor_doaj_task_name))
