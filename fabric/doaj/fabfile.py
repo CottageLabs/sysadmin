@@ -56,7 +56,8 @@ YONCE_IP = '95.85.59.151'
 CLGATE1_IP = '95.85.56.138'
 RICHARD_TEST_IP = '93.93.131.168'
 PINKY_IP = '188.226.153.213'
-APP_SERVER_NAMES = {'YONCE': YONCE_IP}  # the gateway nginx config files are named after which app server the gateway directs traffic to
+DOAJTMP_IP = '188.226.163.151'
+APP_SERVER_NAMES = {'YONCE': YONCE_IP, 'DOAJTMP': DOAJTMP_IP}  # the gateway nginx config files are named after which app server the gateway directs traffic to
 TEST_SERVER_NAMES = {'RICHARD_TEST': RICHARD_TEST_IP}
 STAGING_SERVER_NAMES = {'PINKY': PINKY_IP}
 
@@ -77,7 +78,7 @@ GATE_NGINX_CFG_SUFFIX = '-server-with-local-static'
 # all the time when running Fabric.
 env.roledefs.update(
         {
-            'app': [YONCE_IP], 
+            'app': [YONCE_IP, DOAJTMP_IP], 
             'gate': [CLGATE1_IP],
             'test': [RICHARD_TEST_IP],
             'staging': [PINKY_IP]
