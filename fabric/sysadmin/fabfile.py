@@ -1,6 +1,7 @@
 from fabric.api import env, run, sudo, cd, abort, roles, execute, warn_only
 
 import time
+import sys
 
 env.use_ssh_config = True  # username, identity file (key), hostnames for machines will all be loaded from ~/.ssh/config
 # This means that you run this script like this:
@@ -47,6 +48,7 @@ servers = {
     'pinky': '188.226.153.213',
     'cl_website': '46.235.224.100',
     'arttactic': '46.235.224.107',
+    'doajtmp': '188.226.163.151',
 }
 
 all_servers = []
@@ -59,7 +61,7 @@ ES_EXPORTER_BACKUPS_PATH = '/home/cloo/backups/elasticsearch-es-exporter'
 
 env.roledefs.update(
         {
-            'app': [servers['cl_website'], servers['arttactic'], servers['yonce']], 
+            'app': [servers['cl_website'], servers['arttactic'], servers['yonce'], servers['doajtmp']], 
             'gate': [servers['clgate1']],
             'test': [servers['mark_test'], servers['richard_test'], servers['pinky']]
         }
@@ -108,17 +110,34 @@ def _get_hosts(from_, to_):
 
 # call this like:
 # fab transfer_index:index=doaj,from_=yonce,to_=pinky
-def transfer_index(index, from_, to_, filename=None):
-    '''Copy an index from one machine to another. Requires elasticsearch-exporter (nodejs app) on source machine.'''
+def transfer_index(index, from_, to_, restore_only=False, scp=False, filename=None):
+    ''':index=,from_=,to_= - Copy an index from one machine to another. Requires elasticsearch-exporter (nodejs app) on source machine.'''
     FROM, source_host, TO, target_host = _get_hosts(from_, to_)
+
+    if restore_only and not filename:
+        print 'You probably want to specify a specific filename to restore.'
+        sys.exit(1)
+
+    execute(update_sysadmin, hosts=[source_host, target_host])
 
     if not filename:
         timestamp = time.strftime('%Y-%m-%d_%H%M')
         filename = '{index}_{timestamp}'.format(index=index, timestamp=timestamp)
 
-    execute(backup_index_locally, index=index, directory=ES_EXPORTER_BACKUPS_PATH, filename=filename, hosts=[source_host])
-    execute(secure_copy, filename_pattern=filename + '*', target_host=target_host, remote_path=ES_EXPORTER_BACKUPS_PATH, hosts=[source_host])
-    execute(__uncompress_backups, filename=filename, hosts=[target_host])
+    if not restore_only:
+        execute(backup_index_locally, index=index, directory=ES_EXPORTER_BACKUPS_PATH, filename=filename, hosts=[source_host])
+
+    if (restore_only and scp) or not restore_only:
+        try:
+            execute(secure_copy, filename_pattern=filename + '*', target_host=target_host, remote_path=ES_EXPORTER_BACKUPS_PATH, hosts=[source_host])
+        except SystemExit:
+            print
+            print 'Looks like the secure copy failed - maybe your connection timed out since you didn\'t see that the backup had finished? Trying again...'
+            print
+            execute(secure_copy, filename_pattern=filename + '*', target_host=target_host, remote_path=ES_EXPORTER_BACKUPS_PATH, hosts=[source_host])
+
+        execute(__uncompress_backups, filename=filename, hosts=[target_host])
+
     execute(__es_bulk_restore, index=index, filename=filename, hosts=[target_host])
 
 def backup_index_locally(index, directory, filename):
