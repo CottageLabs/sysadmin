@@ -1,8 +1,11 @@
 server {
     listen          80;
-    listen          443;
+    listen          443 ssl;
     server_name     www.doaj.org;
     
+    ssl_certificate /etc/nginx/CERTS/cottagelabs.com.chained.crt;
+    ssl_certificate_key /etc/nginx/CERTS/cottagelabs.key;
+
     return 301 $scheme://doaj.org$request_uri;
 }
 
