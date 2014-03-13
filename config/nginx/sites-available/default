@@ -20,7 +20,7 @@
 # Modification - return 404 NOT FOUND when an unknown server name is accessed
 # .. instead of showing Welcome to Nginx.
 server {
-    listen      80;
+    listen      80 default_server;
     server_name "";
     return      404;
 }
