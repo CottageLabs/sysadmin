@@ -12,7 +12,7 @@ server {
 server {
     listen          80;
     listen          443 ssl;
-    server_name     doaj.org doaj.cottagelabs.com;
+    server_name     doaj.org .doaj.cottagelabs.com;
 
     access_log /var/log/nginx/doaj.access.log;
     error_log /var/log/nginx/doaj.error.log;
