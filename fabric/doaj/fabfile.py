@@ -137,11 +137,15 @@ def update_doaj(branch='master'):
 def try_on_staging(branch='master'):
     '''Update the staging server with the latest live code and reload the app.'''
     execute(update_doaj, branch=branch, hosts=env.roledefs['staging'])
+    execute(reload_staging)
+
+@roles('staging')
+def reload_staging():
     execute(reload_webserver, supervisor_doaj_task_name='doaj-staging', hosts=env.roledefs['staging'])
 
 @roles('test')
-def update_test(dev_branch="phase2"):
-    '''Update DOAJ on the test server. Optionally takes name of dev branch, default "phase2".'''
+def update_test(dev_branch="phase2b"):
+    '''Update DOAJ on the test server. Optionally takes name of dev branch, default "phase2b".'''
     update_doaj(dev_branch)
     sudo('sudo supervisorctl restart doaj-dev')
 
