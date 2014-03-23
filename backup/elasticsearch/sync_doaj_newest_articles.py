@@ -56,8 +56,12 @@ def main(argv=None):
         if testing:
             print 'TESTING - would PUT', diff['_id']
         else:
-            r = requests.put('http://localhost:9200/doaj/article/' + diff['_id'], data=json.dumps(diff))
+            r = requests.put('http://localhost:9200/doaj/article/' + diff['_id'], data=json.dumps(diff['_source']))
+            print diff['_id'], r.status_code
             if r.status_code not in [200, 201]:
                 print 'ES error for record', diff['_id'], 'HTTP status code:', r.status_code
 
     print 'PUT', len(s), 'newest articles into ES.'
+
+if __name__ == '__main__':
+    main()
