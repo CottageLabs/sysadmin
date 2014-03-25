@@ -48,7 +48,6 @@ servers = {
     'pinky': '188.226.153.213',
     'cl_website': '46.235.224.100',
     'arttactic': '46.235.224.107',
-    'doajtmp': '188.226.163.151',
 }
 
 all_servers = []
@@ -61,7 +60,7 @@ ES_EXPORTER_BACKUPS_PATH = '/home/cloo/backups/elasticsearch-es-exporter'
 
 env.roledefs.update(
         {
-            'app': [servers['cl_website'], servers['arttactic'], servers['yonce'], servers['doajtmp']], 
+            'app': [servers['cl_website'], servers['arttactic'], servers['yonce']], 
             'gate': [servers['clgate1']],
             'test': [servers['mark_test'], servers['richard_test'], servers['pinky']]
         }
