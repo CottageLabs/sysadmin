@@ -125,12 +125,13 @@ def switch_doaj(from_, to_, dont_sync_suggestions=None):
 @roles('app', 'gate')
 def update_doaj(branch='master'):
     with cd(DOAJ_PATH_SRC):
-        run('git stash')
+        stash = run('git stash')
         run('git checkout ' + branch)
         run('git pull', pty=False)
         run('git submodule update', pty=False)
-        with warn_only():
-            run('git stash apply')
+        if not 'No local changes to save' in stash:
+            with warn_only():
+                run('git stash apply')
 
 @roles('staging')
 def try_on_staging(branch='master'):
