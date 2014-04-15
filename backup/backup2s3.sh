@@ -37,9 +37,12 @@ fi
 
 if [ $whatisit == "dir" ]; then
     # need to run rsync as root in order to preserve root permissions and modification times
-    sudo rsync -aEhv "$dir_or_file_to_backup" "$backup_dir"
-    s3cmd sync -H --acl-private --no-delete-removed "$backup_dir" "$bucket"
+    # also, when syncing directories, delete files on the remote which are no longer present locally
+    # only needed for directories to keep their integrity, or eventually they don't look anything like the local dirs!
+    sudo rsync -aEhv --delete-after "$dir_or_file_to_backup" "$backup_dir"
+    s3cmd sync -H --acl-private --delete-removed "$backup_dir" "$bucket"
 else
+    # never delete remote single files which are present locally
     tar -zcf "$backup_dir""$backup_file_prefix"_"$now""$backup_file_suffix" "$dir_or_file_to_backup"
     s3cmd sync -H --acl-private --no-delete-removed "$backup_dir""$backup_file" "$bucket"
 fi
