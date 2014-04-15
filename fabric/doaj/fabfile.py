@@ -244,5 +244,5 @@ def print_doaj_app_config():
             run('grep {key} {doaj_path}/portality/{file_}'.format(file_=file_, key=key, doaj_path=DOAJ_PATH_SRC))
 
 @roles('app')
-def reload_webserver(supervisor_doaj_task_name='doaj'):
+def reload_webserver(supervisor_doaj_task_name='doaj-production'):
     sudo('kill -HUP $(sudo supervisorctl pid {0})'.format(supervisor_doaj_task_name))
