@@ -147,7 +147,7 @@ def reload_staging():
 def update_test(dev_branch="phase2b"):
     '''Update DOAJ on the test server. Optionally takes name of dev branch, default "phase2b".'''
     update_doaj(dev_branch)
-    sudo('sudo supervisorctl restart doaj-dev')
+    sudo('sudo supervisorctl restart doaj-test')
 
 def _get_hosts(from_, to_):
     FROM = from_.upper()
