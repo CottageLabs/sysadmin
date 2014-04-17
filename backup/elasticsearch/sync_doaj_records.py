@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # Syncs DOAJ newest records which are not present in the localhost's doaj index
-# Usage: ./sync_doaj_newest_records.py source_query_endpoint destination_query_endpoint record_type [test]
-# E.g.: ./sync_doaj_newest_records.py "http://doajtmp:9200/doaj/suggestion/_search?q=*&size=1000&sort=created_date:desc" "http://yonce:9200/doaj/suggestion/_search?q=*&size=1000&sort=created_date:desc"
+# Usage: ./sync_doaj_records.py source_query_endpoint destination_query_endpoint record_type [test]
+# E.g.: ./sync_doaj_records.py "http://doajtmp:9200/doaj/suggestion/_search?q=*&size=1000&sort=created_date:desc" "http://yonce:9200/doaj/suggestion/_search?q=*&size=1000&sort=created_date:desc" suggestion
 # IF YOU run this script on yonce, this will copy all newest records present in doajtmp to yonce. It checks which ones to copy by querying the <destination_query_endpoint> and calculating which ones from the source are not present in there.
 # Append "test" to the arguments to test the process first, see how many records would go into ES without actually putting them in
 
