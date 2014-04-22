@@ -6,6 +6,7 @@ server {
     access_log /var/log/nginx/doaj-forward-to-YONCE-with-local-static.access.log;
     error_log /var/log/nginx/doaj-forward-to-YONCE-with-local-static.error.log;
 
+    proxy_read_timeout 600s;
 
     location / {
         proxy_pass http://95.85.59.151;
@@ -34,6 +35,8 @@ server {
     ssl on;
     ssl_certificate /etc/nginx/CERTS/cottagelabs.com.chained.crt;
     ssl_certificate_key /etc/nginx/CERTS/cottagelabs.key;
+
+    proxy_read_timeout 600s;
 
     location / {
         proxy_pass https://95.85.59.151;

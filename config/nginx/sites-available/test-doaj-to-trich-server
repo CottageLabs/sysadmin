@@ -5,6 +5,8 @@ server {
     access_log /var/log/nginx/test-doaj-to-trich-server.access.log;
     error_log /var/log/nginx/test-doaj-to-trich-server.error.log;
 
+    proxy_read_timeout 600s;
+
     location / {
 	proxy_pass http://93.93.131.168; # Richard's test server
         proxy_redirect off;
@@ -25,6 +27,8 @@ server {
 
     access_log /var/log/nginx/test-doaj-to-trich-server.access.log;
     error_log /var/log/nginx/test-doaj-to-trich-server.error.log;
+
+    proxy_read_timeout 600s;
 
     location / {
 	proxy_pass https://93.93.131.168; # Richard's test server
