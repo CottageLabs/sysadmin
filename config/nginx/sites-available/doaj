@@ -22,6 +22,8 @@ server {
     ssl_certificate /etc/nginx/CERTS/cottagelabs.com.chained.crt;
     ssl_certificate_key /etc/nginx/CERTS/cottagelabs.key;
 
+    proxy_read_timeout 600s;
+
     location / {
         proxy_pass http://localhost:5050/;
         proxy_redirect off;
