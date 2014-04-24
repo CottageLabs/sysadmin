@@ -5,7 +5,7 @@ import argparse
 import os
 import sys
 import logging
-from subprocess import check_output, CalledProcessError
+import subprocess
 import shlex
 import time
 
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_HOST = 'localhost'
 DEFAULT_PORT = 9200
 DEFAULT_QUERY_SIZE = 10
-DEFAULT_EXEC = ['/usr/bin/node', '--nouse-idle-notification', '--expose-gc', '/home/cloo/elasticsearch-exporter', '-m 0.3']
+DEFAULT_EXEC = ['node', '--nouse-idle-notification', '--expose-gc', '/home/cloo/elasticsearch-exporter', '-m 0.3']
 
 # The following options should be (kept) the same as the nodejs app
 # "elasticsearch-exporter" options related to backing up stuff.
@@ -43,7 +43,7 @@ def main(argv=None):
         argv = sys.argv
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("backup_directory")
+    parser.add_argument("backup_directory", help="Will be created with mkdir -p if it doesn't exist. Probably best if you ensure it exists and has the correct permissions though.")
     
     for p in EXPORTER_PARAMS:
         short = p['short']; long_ = p['long']; default = p.get('default'); help_ = p.get('help');
@@ -52,6 +52,7 @@ def main(argv=None):
     # UI / CLI - this param is much more rarely used (if ever), so
     # goes at the bottom of the list
     parser.add_argument("--exporter", action=StoreAsList, default=DEFAULT_EXEC, help='Which executable to use for the actual export operation. It will get all the short options. Default: "{0}"'.format(' '.join(DEFAULT_EXEC))) 
+    parser.add_argument("--s3-bucket", help="If you specify this (format: s3://BUCKET_NAME ), the resulting backup files will be put on a S3 bucket with the most restrictive access permissions. Existing files will be overwritten, so if you are also using a custom filename with -g or --targetFile, make sure to include a timestamp in it.") 
 
     args=parser.parse_args(argv[1:])
 
@@ -86,16 +87,57 @@ def main(argv=None):
             exporter_args.append(p['short'])
             exporter_args.append(str(argval))  # remove the dashes when accessing that argument in the args Namespace obj
 
-    os.chdir(args.backup_directory)
+    logger.info('Going into {0}.'.format(args.backup_directory))
+    cd(args.backup_directory)
+
+    start = datetime.now()
+    logger.info('Starting export using {exporter} at {time}'.format(exporter=' '.join(args.exporter + exporter_args), time=start))
+    output = run_command(args.exporter + exporter_args)
+    end = datetime.now()
+    elapsed = end - start
+    logger.info('Export finished at {time}'.format(time=end))
+    logger.info('Export took {time}'.format(time=elapsed))
+
+    if args.s3_bucket:
+        upload_filename = filename_base + '.meta'
+        logger.info('Putting {file} into S3 bucket {bucket}.'.format(file=upload_filename, bucket=args.s3_bucket))
+        output = run_command(['s3cmd', 'put', '--acl-private', '-H', upload_filename, args.s3_bucket])
+
+        upload_filename = filename_base + '.data'
+        logger.info('Putting {file} into S3 bucket {bucket}.'.format(file=upload_filename, bucket=args.s3_bucket))
+        output = run_command(['s3cmd', 'put', '--acl-private', '-H', upload_filename, args.s3_bucket])
+
+    logger.info('All done.')
+
+
+def cd(directory, recursion_level=0):
+    if recursion_level > 2:
+        fail('The attempt to change the current working directory to {0} has failed - this script keeps trying to create it and failing to cd into it repeatedly.'.format(directory))
     try:
-        output = check_output(args.exporter + exporter_args)
+        os.chdir(directory)
     except OSError as e:
         if e.errno == 2:
-            fail('Cannot find the exporter executable ' + args.exporter)
+            logger.info('Directory {0} does not exist, attempting to create with mkdir -p...'.format(directory))
+            output = run_command(['mkdir', '-p', directory])
+            cd(directory, recursion_level=recursion_level+1)
+        else:
+            raise e
+
+
+def run_command(arguments, *args, **kwargs):
+    '''Takes a list as 1st argument and passes everything to subprocess.check_output, keeping the signature the same as subprocess.check_output.'''
+    stderr = kwargs.pop('stderr', subprocess.STDOUT)  # capture stderr by default, but allow override via kwargs
+
+    try:
+        output = subprocess.check_output(arguments, *args, stderr=stderr, **kwargs)
+    except OSError as e:
+        if e.errno == 2:
+            fail('Cannot find the executable ' + arguments[0])
         raise e
-    except CalledProcessError as e:
+    except subprocess.CalledProcessError as e:
         log(' '.join(e.cmd), 'failed with return code', str(e.returncode), "output below\n", str(e.output), severity='error')
         raise e
+    return output
 
 
 def log(*args, **kwargs):
