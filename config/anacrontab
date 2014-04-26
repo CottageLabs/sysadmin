@@ -12,7 +12,6 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 # s3cmd, part of the backup script, is not going to find its config file at /home/cloo/.s3cfg if run directly as root
 # and to be fair, other things may break too - scripts get developed as cloo, so just run them as cloo
 # better for security / reliability too, in case a script is buggy
-1	5	doaj-xml-backup		su - cloo -c 'nice -n 19 /home/cloo/backups/backup2s3.sh /opt/doaj/src/doaj/upload/ /home/cloo/backups/doaj-xml-uploads/ dummy s3://doaj-xml-uploads >> /home/cloo/backups/logs/doaj-xml-uploads_`date +%F_%H%M`.log 2>&1'
 
 # replicate old functionality of just keep 1 daily backup by using -g and a filename without a timestamp,
 # but should write some rotation scripts soon and enable keeping more backups by just removing the -g param below
