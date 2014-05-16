@@ -145,7 +145,7 @@ def reload_staging():
 
 @roles('test')
 def update_test(dev_branch="master"):
-    '''Update DOAJ on the test server. Optionally takes name of dev branch, default "master".'''
+    '''Update DOAJ on the test server. Optionally takes dev_branch=<name> arg, default "master".'''
     update_doaj(dev_branch)
     sudo('sudo supervisorctl restart doaj-test')
 
