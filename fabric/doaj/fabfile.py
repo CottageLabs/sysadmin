@@ -126,8 +126,8 @@ def switch_doaj(from_, to_, dont_sync_suggestions=None):
 def update_doaj(branch='master'):
     with cd(DOAJ_PATH_SRC):
         stash = run('git stash')
-        run('git checkout ' + branch)
         run('git pull', pty=False)
+        run('git checkout ' + branch)
         run('git submodule update', pty=False)
         if not 'No local changes to save' in stash:
             with warn_only():
