@@ -17,3 +17,4 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 # but should write some rotation scripts soon and enable keeping more backups by just removing the -g param below
 1	15	doaj-index-backup	su - cloo -c 'nice -n 19 /home/cloo/backups/backup_es.py /home/cloo/backups/elasticsearch/ -g doaj -i doaj --s3-bucket s3://cl-elasticsearch-backups >> /home/cloo/backups/logs/doaj-index_`date +%F-%H%M%S`.log 2>&1'
 1	75	oag-index-backup	su - cloo -c 'nice -n 19 /home/cloo/backups/backup_es.py /home/cloo/backups/elasticsearch/ -g oag -i oag --s3-bucket s3://cl-elasticsearch-backups >> /home/cloo/backups/logs/oag-index_`date +%F-%H%M%S`.log 2>&1'
+1	140	doaj-sitemap	su - cloo -c 'export DOAJENV=production ; nice -n 19 /opt/doaj/bin/python /opt/doaj/src/doaj/portality/scripts/sitemap.py >> /home/cloo/cron-logs/doaj-sitemap_`date +%F_%H%M%S`.log 2>&1'
