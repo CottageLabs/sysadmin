@@ -28,6 +28,7 @@ echo "127.0.1.1       "`cat /etc/hostname` >> /etc/hosts
 mkdir -p /home/cloo/backups/elasticsearch
 mkdir -p /home/cloo/backups/elasticsearch-es-exporter
 mkdir -p /home/cloo/backups/logs
+mkdir -p /home/cloo/cron-logs
 chown -R cloo:cloo /home/cloo/backups
 
 # apt install useful stuff
@@ -129,10 +130,12 @@ apt-add-repository ppa:chris-lea/node.js
 apt-get update
 apt-get install nodejs
 npm install sqlite3
+
 mkdir /home/cloo/elasticsearch-exporter-src
 cd /home/cloo/elasticsearch-exporter-src
-npm -g install elasticsearch-exporter --production
+npm install elasticsearch-exporter --production
 cd /home/cloo
+mv node_modules elasticsearch-exporter-src
 ln -s elasticsearch-exporter-src/node_modules/elasticsearch-exporter/exporter.js elasticsearch-exporter
 chown -R cloo:cloo elasticsearch-exporter*
 

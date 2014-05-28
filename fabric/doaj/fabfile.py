@@ -132,6 +132,16 @@ def update_doaj(branch='master'):
         if not 'No local changes to save' in stash:
             with warn_only():
                 run('git stash apply')
+    install_dependencies()
+
+@roles('app', 'staging', 'test')
+def install_dependencies():
+    # do not try this on the gateway server(s)
+    if env.host_string in env.roledefs['gate']:
+        return
+
+    with cd(DOAJ_PATH_SRC):
+        run('source ../../bin/activate && pip install -e .')
 
 @roles('staging')
 def try_on_staging(branch='master'):
