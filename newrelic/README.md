@@ -7,9 +7,9 @@ Of course, you need to install that successfully first before installing the Mee
 
 Elasticsearch and nginx plugins:
 
-1. follow instructions on RPM (the newrelic control panel) to install the newrelic_plugin_agent via pip
-2. sudo cp ./newrelic_plugin_agent.cfg /etc/newrelic/
-3. sudo vim /etc/newrelic/newrelic_plugin_agent.cfg  # put the Newrelic license key on the line which says INSERT LICENSE KEY HERE
+1. follow instructions on RPM (the newrelic control panel) to install the newrelic_plugin_agent via pip but: sudo pip install newrelic_plugin_agent
+2. sudo cp ./newrelic-plugin-agent.cfg /etc/newrelic/
+3. sudo vim /etc/newrelic/newrelic-plugin-agent.cfg  # put the Newrelic license key on the line which says INSERT LICENSE KEY HERE
 4. make sure the elasticsearch and nginx configs are correct
 
     a. elasticsearch should be running on localhost:9200
@@ -31,14 +31,14 @@ Elasticsearch and nginx plugins:
     sudo chmod 775 /var/log/newrelic  # group-writable, so we can try it out as the cloo user
 
     # alright, now test the config - won't run as a daemon, just outputs to terminal
-    newrelic_plugin_agent -c /etc/newrelic/newrelic_plugin_agent.cfg -f
+    newrelic-plugin-agent -c /etc/newrelic/newrelic-plugin-agent.cfg -f
     # there should be no errors - if there are, check the config is correct YAML,
     # check your nginx http status path and ES settings, check the nginx error log and the ES error log as needed
 
 6. Set it up as a service if everything is OK and you start seeing data in a couple of minutes on the Newrelic RPM control panel:
 
-    sudo cp /opt/newrelic_plugin_agent/newrelic_plugin_agent.deb /etc/init.d/newrelic_plugin_agent
-    sudo chmod a+x /etc/init.d/newrelic_plugin_agent
-    sudo update-rc.d newrelic_plugin_agent defaults 95 05
+    sudo cp /opt/newrelic-plugin-agent/newrelic-plugin-agent.deb /etc/init.d/newrelic-plugin-agent
+    sudo chmod a+x /etc/init.d/newrelic-plugin-agent
+    sudo update-rc.d newrelic-plugin-agent defaults 95 05
     sudo sysv-rc-conf --list | grep newrelic  # should return something like newrelic-plu (as well as newrelic-sys, the main newrelic monitor)
-    sudo service newrelic_plugin_agent start
+    sudo service newrelic-plugin-agent start
