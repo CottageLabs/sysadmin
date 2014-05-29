@@ -1,17 +1,17 @@
 server {
     listen          80;
-    #listen          443 ssl;
+    listen          443 ssl;
     server_name      www.doaj.org;
     
-    #ssl_certificate /etc/nginx/CERTS/cottagelabs.com.chained.crt;
-    #ssl_certificate_key /etc/nginx/CERTS/cottagelabs.key;
+    ssl_certificate /etc/nginx/CERTS/cottagelabs.com.chained.crt;
+    ssl_certificate_key /etc/nginx/CERTS/cottagelabs.key;
 
     return 301 $scheme://doaj.org$request_uri;
 }
 
 server {
     listen          80;
-    #listen          443 ssl;
+    listen          443 ssl;
     server_name     doaj.org .doaj.cottagelabs.com;
 
     access_log /var/log/nginx/doaj.access.log;
@@ -19,8 +19,8 @@ server {
 
     set_real_ip_from 95.85.56.138;
 
-    #ssl_certificate /etc/nginx/CERTS/cottagelabs.com.chained.crt;
-    #ssl_certificate_key /etc/nginx/CERTS/cottagelabs.key;
+    ssl_certificate /etc/nginx/CERTS/cottagelabs.com.chained.crt;
+    ssl_certificate_key /etc/nginx/CERTS/cottagelabs.key;
 
     proxy_read_timeout 600s;
 
