@@ -32,21 +32,20 @@ mkdir -p /home/cloo/cron-logs
 chown -R cloo:cloo /home/cloo/backups
 
 # apt install useful stuff
-apt-get update
-apt-get -q -y install mcelog  # hardware error decoder / logger
-apt-get -q -y install bpython screen htop nginx git-core curl anacron lm-sensors sysv-rc-conf s3cmd bc vnstat
-apt-get -q -y install python-pip python-dev python-setuptools build-essential
-apt-get -q -y install openjdk-6-jdk openjdk-6-jre-headless
-apt-get -q -y install python-software-properties  # ability to add PPA-s for the latest versions of software including the add-apt-repository command
 add-apt-repository -y ppa:webupd8team/java
 apt-get update
 # pre-accept the Oracle Java binaries license
 echo "debconf shared/accepted-oracle-license-v1-1 select true" | debconf-set-selections
 echo "debconf shared/accepted-oracle-license-v1-1 seen true" | debconf-set-selections
-apt-get -q -y install oracle-java7-installer  # get the latest Oracle Java
+apt-get -q -y install mcelog bpython screen htop nginx git-core curl anacron lm-sensors sysv-rc-conf s3cmd bc vnstat python-pip python-dev python-setuptools build-essential openjdk-6-jdk openjdk-6-jre-headless python-software-properties oracle-java7-installer
+
 # run java -version from the command line to check java's version
 # additionally ps and htop will show you the exact path to the java executable running elasticsearch, which includes the version number
 
+# Set up s3cmd to access the CL AWS account
+# scp <existing server>:/home/cloo/.s3cfg .
+# scp .s3cfg <new server>:/home/cloo
+# rm .s3cfg
 
 # pip install useful python stuff
 pip install --upgrade pip
@@ -58,7 +57,7 @@ pip install requests
 
 # get latest version of supervisor via pip
 pip install supervisor
-curl https://gist.github.com/howthebodyworks/176149/raw/88d0d68c4af22a7474ad1d011659ea2d27e35b8d/supervisord.sh > ~/supervisord
+curl -s https://raw.githubusercontent.com/Supervisor/initscripts/eb55c1a15d186b6c356ca29b6e08c9de0fe16a7e/ubuntu > ~/supervisord
 mv ~/supervisord /etc/init.d/supervisord
 chmod a+x /etc/init.d/supervisord
 /usr/sbin/service supervisord stop
@@ -66,8 +65,12 @@ update-rc.d supervisord defaults
 mkdir /var/log/supervisor
 mkdir /etc/supervisor/
 mkdir /etc/supervisor/conf.d
+
 # Path below relative to this script!
-cp config/supervisor/supervisord.conf /etc/supervisord.conf
+cp config/supervisor/supervisord.conf /etc/supervisor/supervisord.conf
+
+ln -s /etc/supervisor/supervisord.conf /etc/supervisord.conf
+ln -s /usr/local/bin/supervisord /usr/bin/supervisord
 /usr/sbin/service supervisord start
 
 
@@ -79,6 +82,11 @@ ufw allow 443
 ufw enable
 
 
+# time
+sudo apt-get install ntp
+sudo dpkg-reconfigure tzdata  # Europe/London
+
+
 # get elasticsearch
 cd /opt
 curl -L https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-0.90.7.tar.gz -o elasticsearch.tar.gz
@@ -88,13 +96,12 @@ rm elasticsearch.tar.gz
 cd elasticsearch/bin
 git clone git://github.com/elasticsearch/elasticsearch-servicewrapper.git
 cd elasticsearch-servicewrapper
+git checkout 0.90
 mv service ../
 cd ../
 rm -R elasticsearch-servicewrapper
 ln -s /opt/elasticsearch/bin/service/elasticsearch /etc/init.d/elasticsearch
 update-rc.d elasticsearch defaults
-cd /opt/elasticsearch
-./bin/plugin --install knapsack --url http://bit.ly/K8QwOJ  # need a new version for ES v. 0.90.10+! see https://github.com/jprante/elasticsearch-knapsack
 # elasticsearch settings
 # vim config/elasticsearch.yml and uncomment bootstrap.mlockall: true
 # and uncomment cluster.name: elasticsearch (and change cluster name if necessary)
