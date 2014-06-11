@@ -11,8 +11,14 @@ cd /home/cloo
 mkdir /home/cloo/.ssh
 chown cloo:cloo /home/cloo/.ssh
 chmod 700 /home/cloo/.ssh
-vim /home/cloo/.ssh/authorized_keys
 # and copy required pubkeys into it
+# If you are creating a new Digital Ocean droplet and have specified
+# keys to be included on the DO control panel, do this:
+# cp /root/.ssh/authorized_keys .ssh/
+# chown cloo:cloo .ssh/authorized_keys
+
+# If you wish to add more keys manually:
+# vim /home/cloo/.ssh/authorized_keys
 chown cloo:cloo /home/cloo/.ssh/authorized_keys
 chmod 600 /home/cloo/.ssh/authorized_keys
 # if version ubuntu 12.04 - previous to that the group was admin 
