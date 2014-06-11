@@ -1,4 +1,4 @@
-
+##### BASIC SETUP #####
 # this may be needed - not sure, seems to work without it
 #export DEBIAN_FRONTEND=noninteractive
 
@@ -31,13 +31,42 @@ mkdir -p /home/cloo/backups/logs
 mkdir -p /home/cloo/cron-logs
 chown -R cloo:cloo /home/cloo/backups
 
+# time
+sudo apt-get install ntp
+sudo dpkg-reconfigure tzdata  # Europe/London
+
+# edit the ssh settings
+vim /etc/ssh/sshd_config
+# change it as follows:
+PermitRootLogin no
+PasswordAuthentication no
+/etc/init.d/ssh restart
+
+# set up firewall - allow 22, 80, 443
+apt-get -q -y install ufw
+ufw allow 22
+ufw allow 80
+ufw allow 443
+ufw enable
+
+# set up newrelic server monitoring
+echo "deb http://apt.newrelic.com/debian/ newrelic non-free" >> /etc/apt/sources.list.d/newrelic.list`
+wget -O- https://download.newrelic.com/548C16BF.gpg | apt-key add -
+apt-get update
+apt-get install newrelic-sysmond
+nrsysmond-config --set license_key=<license key>
+sudo service start newrelic-sysmond
+# go to https://rpm.newrelic.com/accounts/526071/server_alert_policies
+# and assign your new server to the appropriate policy
+
+
 # apt install useful stuff
 add-apt-repository -y ppa:webupd8team/java
 apt-get update
 # pre-accept the Oracle Java binaries license
 echo "debconf shared/accepted-oracle-license-v1-1 select true" | debconf-set-selections
 echo "debconf shared/accepted-oracle-license-v1-1 seen true" | debconf-set-selections
-apt-get -q -y install mcelog bpython screen htop nginx git-core curl anacron lm-sensors sysv-rc-conf s3cmd bc vnstat python-pip python-dev python-setuptools build-essential openjdk-6-jdk openjdk-6-jre-headless python-software-properties oracle-java7-installer
+apt-get -q -y install mcelog bpython screen htop nginx git-core curl anacron sysv-rc-conf s3cmd bc vnstat python-pip python-dev python-setuptools build-essential python-software-properties oracle-java7-installer
 
 # run java -version from the command line to check java's version
 # additionally ps and htop will show you the exact path to the java executable running elasticsearch, which includes the version number
@@ -46,6 +75,11 @@ apt-get -q -y install mcelog bpython screen htop nginx git-core curl anacron lm-
 # scp <existing server>:/home/cloo/.s3cfg .
 # scp .s3cfg <new server>:/home/cloo
 # rm .s3cfg
+
+# If you can't find a prefilled config file, do this:
+# s3cmd --configure # take Access and Secret keys it asks for from Cottage Labs' AWS account at amazon.cottagelabs.com
+
+##### PYTHON AND SUPERVISOR #####
 
 # pip install useful python stuff
 pip install --upgrade pip
@@ -74,18 +108,7 @@ ln -s /usr/local/bin/supervisord /usr/bin/supervisord
 /usr/sbin/service supervisord start
 
 
-# set up firewall - allow 22, 80, 443
-apt-get -q -y install ufw
-ufw allow 22
-ufw allow 80
-ufw allow 443
-ufw enable
-
-
-# time
-sudo apt-get install ntp
-sudo dpkg-reconfigure tzdata  # Europe/London
-
+##### OPTIONAL SETUP #####
 
 # get elasticsearch
 cd /opt
@@ -122,13 +145,6 @@ sudo /etc/init.d/elasticsearch start
 # this command will always tell you "Running with PID XXX". Even though plugins could cause it to fail to start. So wait for 15 seconds, then try
 # curl localhost:9200
 # you should get a response, otherwise something's wrong, check /opt/elasticsearch/logs.
-
-# edit the ssh settings
-vim /etc/ssh/sshd_config
-# change it as follows:
-PermitRootLogin no
-PasswordAuthentication no
-/etc/init.d/ssh restart
 
 
 # install node
@@ -180,8 +196,9 @@ chown -R cloo:cloo elasticsearch-exporter*
 
 
 # set up sensors package for better monitoring and more information e.g. CPU temperatures
+# THIS IS POINTLESS ON VIRTUAL SERVERS
 # taken from https://help.ubuntu.com/community/SensorInstallHowto
-# 1. apt-get install lm-sensors (lm-sensors should already get installed above so you should be able to skip this)
+# 1. apt-get install lm-sensors
 # 2. Run sudo sensors-detect and choose YES to all YES/no questions.
 # 3. At the end of sensors-detect, a list of modules that needs to be loaded will displayed. Type "yes" to have sensors-detect insert those modules into /etc/modules, or edit /etc/modules yourself.
 # 4. Next, run
@@ -190,4 +207,3 @@ chown -R cloo:cloo elasticsearch-exporter*
 # See sensor info by running "sensors" from the shell.
 
 
-# run s3cmd --configure - take Access and Secret keys from Cottage Labs' AWS account at amazon.cottagelabs.com
