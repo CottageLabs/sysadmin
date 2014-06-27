@@ -105,8 +105,10 @@ def main(argv=None):
             if r.status_code == 200:
                 print '  Deleted successfully.'
             else:
-                print '  Problem deleting the data. Aborting.'
-                sys.exit(2)
+                print '  ES reported a problem deleting the data.'
+                print '    Status code: {0}.'.format(r.status_code)
+                print '    HTTP response body:'
+                print r.text
             requests.post(config['ELASTIC_SEARCH_HOST'] + '/_flush')
             sleep(5)
             deleted = True
@@ -149,7 +151,20 @@ def main(argv=None):
             if dry_run:
                 print '  DRY RUN: Batch #{0} constructed, len(batch) = {1}, but not sending to ES.'.format(counter, len(batch))
             else:
-                r = requests.post(config['ELASTIC_SEARCH_HOST'] + '/_bulk', data=data)
+                r = None
+                count = 0
+                exception = None
+                while count < retry:
+                    count += 1
+                    try:
+                        r = requests.post(config['ELASTIC_SEARCH_HOST'] + '/_bulk', data=data)
+                        break
+                    except Exception as e:
+                        exception = e
+                    time.sleep(0.5)
+                        
+                if exception is not None:
+                    raise exception
 
                 if r.status_code != 200:
                     print '  Batch', counter, 'error. HTTP response:', r.status_code
