@@ -10,6 +10,7 @@ import argparse
 config = {}
 config['ELASTIC_SEARCH_HOST'] = 'http://localhost:9200'
 config['ELASTIC_SEARCH_HOST'] = config['ELASTIC_SEARCH_HOST'].rstrip('/')
+config['RETRY_ES'] = 30
 
 def put_mapping(mapping_dict):
     for index in mapping_dict:
@@ -156,7 +157,7 @@ def main(argv=None):
                 r = None
                 count = 0
                 exception = None
-                while count < retry:
+                while count < config['RETRY_ES']:
                     count += 1
                     try:
                         r = requests.post(config['ELASTIC_SEARCH_HOST'] + '/_bulk', data=data)
