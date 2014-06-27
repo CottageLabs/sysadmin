@@ -164,7 +164,7 @@ def main(argv=None):
                         break
                     except Exception as e:
                         exception = e
-                    time.sleep(0.5)
+                    sleep(0.5)
                         
                 if exception is not None:
                     raise exception
