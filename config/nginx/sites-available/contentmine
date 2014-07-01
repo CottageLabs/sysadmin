@@ -1,0 +1,25 @@
+server {
+	listen 80;
+
+	server_name contentmine.org www.contentmine.org;
+
+	location  /static {
+		alias /opt/contentmine/src/site/portality/static;
+		autoindex on;
+		expires max;
+	}
+
+	location  /media {
+		alias /opt/contentmine/src/site/media;
+		autoindex on;
+		expires max;
+	}
+
+	location / {
+        	proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        	proxy_set_header Host $http_host;
+        	proxy_redirect off;
+        	proxy_set_header X-Real-IP $remote_addr;
+		proxy_pass http://localhost:5014/;
+	}
+}
