@@ -8,7 +8,7 @@ server {
     proxy_read_timeout 600s;
 
     location / {
-	proxy_pass http://188.226.208.42; # Richard's test server
+	proxy_pass http://5.101.97.169; # Richard's test server
         proxy_redirect off;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -31,7 +31,7 @@ server {
     proxy_read_timeout 600s;
 
     location / {
-	proxy_pass https://188.226.208.42; # Richard's test server
+	proxy_pass https://5.101.97.169; # Richard's test server
         proxy_redirect off;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
