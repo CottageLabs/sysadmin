@@ -48,6 +48,7 @@ servers = {
     'pinky': '188.226.153.213',
     'cl_website': '46.235.224.100',
     'arttactic': '46.235.224.107',
+    'oamonitor': '188.226.213.168',
 }
 
 all_servers = []
@@ -62,7 +63,7 @@ env.roledefs.update(
         {
             'app': [servers['cl_website'], servers['arttactic'], servers['yonce']], 
             'gate': [servers['clgate1']],
-            'test': [servers['mark_test'], servers['richard_test'], servers['pinky']]
+            'test': [servers['mark_test'], servers['richard_test'], servers['pinky'], servers['oamonitor']]
         }
 )
 
@@ -109,8 +110,11 @@ def _get_hosts(from_, to_):
 
 # call this like:
 # fab transfer_index:index=doaj,from_=yonce,to_=pinky
-def transfer_index(index, from_, to_, restore_only=False, scp=False, filename=None):
-    ''':index=,from_=,to_= - Copy an index from one machine to another. Requires elasticsearch-exporter (nodejs app) on source machine.'''
+def transfer_index(index, from_, to_, restore_only=False, scp=False, filename=None, restore_batch_size=None, restore_sleep=None):
+    ''':index=,from_=,to_= - Copy an index from one machine to another. Requires elasticsearch-exporter (nodejs app) on source machine. Read src for more options.'''
+    restore_only = (restore_only == True)  # all args get stringified by fabric
+    scp = (scp == True)
+
     FROM, source_host, TO, target_host = _get_hosts(from_, to_)
 
     if restore_only and not filename:
@@ -137,7 +141,7 @@ def transfer_index(index, from_, to_, restore_only=False, scp=False, filename=No
 
         execute(__uncompress_backups, filename=filename, hosts=[target_host])
 
-    execute(__es_bulk_restore, index=index, filename=filename, hosts=[target_host])
+    execute(__es_bulk_restore, index=index, filename=filename, restore_batch_size=restore_batch_size, restore_sleep=restore_sleep, hosts=[target_host])
 
 def backup_index_locally(index, directory, filename):
     with cd(directory):
@@ -148,12 +152,19 @@ def secure_copy(filename_pattern, target_host, remote_path):
     with cd(ES_EXPORTER_BACKUPS_PATH):
         run('scp {filename_pattern} cloo@{target_host}:{remote_path}'.format(filename_pattern=filename_pattern, target_host=target_host, remote_path=remote_path))
 
-def __es_bulk_restore(index, filename):
+
+def __es_bulk_restore(index, filename, restore_batch_size=None, restore_sleep=None):
     with cd(ES_EXPORTER_BACKUPS_PATH):
         thescript = SYSADMIN_SRC_PATH + '/backup/elasticsearch/bulk_restore.py'
         mapping_filename = ES_EXPORTER_BACKUPS_PATH + '/' + filename + '.meta'
         data_filename = ES_EXPORTER_BACKUPS_PATH + '/' + filename + '.data'
-        run('python {thescript} -i {index} {mapping_filename} {data_filename}'.format(thescript=thescript, index=index, mapping_filename=mapping_filename, data_filename=data_filename))
+        cmd = 'python {thescript} -i {index} {mapping_filename} {data_filename}'.format(thescript=thescript, index=index, mapping_filename=mapping_filename, data_filename=data_filename)
+        if restore_batch_size:
+            cmd += ' -b ' + restore_batch_size
+        if restore_sleep:
+            cmd += ' -s ' + restore_sleep
+        run(cmd)
+
 
 def __uncompress_backups(filename):
     with cd(ES_EXPORTER_BACKUPS_PATH):
