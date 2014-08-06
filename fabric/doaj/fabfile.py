@@ -55,10 +55,10 @@ env.key_filename.extend(
 YONCE_IP = '95.85.59.151'
 CLGATE1_IP = '95.85.56.138'
 RICHARD_TEST_IP = '188.226.208.42'
-PINKY_IP = '188.226.153.213'
+DOAJ_STAGING_IP = '95.85.48.213'
 APP_SERVER_NAMES = {'YONCE': YONCE_IP}  # the gateway nginx config files are named after which app server the gateway directs traffic to
 TEST_SERVER_NAMES = {'RICHARD_TEST': RICHARD_TEST_IP}
-STAGING_SERVER_NAMES = {'PINKY': PINKY_IP}
+STAGING_SERVER_NAMES = {'DOAJ_STAGING': DOAJ_STAGING_IP}
 
 env.hosts = [CLGATE1_IP]
 
@@ -80,7 +80,7 @@ env.roledefs.update(
             'app': [YONCE_IP], 
             'gate': [CLGATE1_IP],
             'test': [RICHARD_TEST_IP],
-            'staging': [PINKY_IP]
+            'staging': [DOAJ_STAGING_IP]
         }
 )
 
@@ -140,8 +140,12 @@ def install_dependencies():
     if env.host_string in env.roledefs['gate']:
         return
 
+    sudo('sudo apt-get update')
+    sudo('sudo apt-get -q -y install libxml2-dev libxslt-dev python-dev lib32z1-dev')
+
     with cd(DOAJ_PATH_SRC):
         run('source ../../bin/activate && pip install -e .')
+
 
 @roles('staging')
 def try_on_staging(branch='master'):
