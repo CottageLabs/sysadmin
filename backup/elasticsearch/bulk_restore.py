@@ -55,7 +55,7 @@ def main(argv=None):
     parser.add_argument("-t", "--dry-run", action="store_true")
     parser.add_argument("-y", "--destroy-all", action="store_true", help="Pass this to delete all indices in the target ES instance and skip the question this script would otherwise ask about this.")
     parser.add_argument("-n", "--no-destroy-all", action="store_true", help="Pass this to skip deleting all indices in the target ES instance and skip the question this script would otherwise ask about this. NOTE: The script will skip updating the mappings if you do not agree to delete all data. (You have to reindex after a mapping update.)")
-    parser.add_argument("-s", "--sleep", type=int, help="Number of seconds to sleep between batches. Pass 0 to disable sleeping. Default: the first digit of your batch size. If sending 20 items, sleep 2 seconds between them. Same for 200 or 200'000 items. Sending 30, 3'000 (and so on) items will sleep for 3 seconds by default.")
+    parser.add_argument("-s", "--sleep", type=float, help="Number of seconds to sleep between batches, floats are allowed. Pass 0 to disable sleeping. Default: the first digit of your batch size. If sending 20 items, sleep 2 seconds between them. Same for 200 or 200'000 items. Sending 30, 3'000 (and so on) items will sleep for 3 seconds by default.")
     args=parser.parse_args(argv[1:])
 
     mapping_filename = args.mapping_filename
