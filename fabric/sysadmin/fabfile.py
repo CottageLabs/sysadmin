@@ -112,8 +112,8 @@ def _get_hosts(from_, to_):
 # fab transfer_index:index=doaj,from_=yonce,to_=pinky
 def transfer_index(index, from_, to_, restore_only=False, scp=False, filename=None, restore_batch_size=None, restore_sleep=None):
     ''':index=,from_=,to_= - Copy an index from one machine to another. Requires elasticsearch-exporter (nodejs app) on source machine. Read src for more options.'''
-    restore_only = (restore_only == True)  # all args get stringified by fabric
-    scp = (scp == True)
+    restore_only = (restore_only == 'True')  # all args get stringified by fabric
+    scp = (scp == 'True')
 
     FROM, source_host, TO, target_host = _get_hosts(from_, to_)
 
