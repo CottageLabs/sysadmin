@@ -38,7 +38,7 @@ mkdir -p /home/cloo/cron-logs
 chown -R cloo:cloo /home/cloo/backups
 
 # time
-sudo apt-get install ntp
+sudo apt-get -q -y install ntp
 sudo dpkg-reconfigure tzdata  # Europe/London
 
 # edit the ssh settings
