@@ -134,6 +134,12 @@ update-rc.d elasticsearch defaults
 # elasticsearch settings
 # vim config/elasticsearch.yml and uncomment bootstrap.mlockall: true
 # and uncomment cluster.name: elasticsearch (and change cluster name if necessary)
+# IMPORTANT!!! put
+# script.disable_dynamic: true
+# at the end of the config/elasticsearch.yml file! This is to prevent DDoS-ing
+# others through our ES and locking up of the server by our ISP if port 9200 is
+# open...
+# OK, now:
 # vim bin/service/elasticsearch.conf and set.default.ES_HEAP_SIZE=4096 or whatever value works for the machine
 # then vim /etc/security/limits.conf and put this in:
 # root  hard  nofile  1024000
