@@ -125,6 +125,8 @@ def switch_doaj(from_, to_, dont_sync_suggestions=None):
 @roles('app', 'gate')
 def update_doaj(branch='master'):
     with cd(DOAJ_PATH_SRC):
+        run('git config user.email "us@cottagelabs.com"')
+        run('git config user.name "Cottage Labs LLP"')
         stash = run('git stash')
         run('git pull', pty=False)
         run('git checkout ' + branch)
