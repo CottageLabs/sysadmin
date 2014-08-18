@@ -54,7 +54,7 @@ env.key_filename.extend(
 
 YONCE_IP = '95.85.59.151'
 CLGATE1_IP = '95.85.56.138'
-RICHARD_TEST_IP = '188.226.208.42'
+RICHARD_TEST_IP = '5.101.97.169'
 DOAJ_STAGING_IP = '95.85.48.213'
 APP_SERVER_NAMES = {'YONCE': YONCE_IP}  # the gateway nginx config files are named after which app server the gateway directs traffic to
 TEST_SERVER_NAMES = {'RICHARD_TEST': RICHARD_TEST_IP}
