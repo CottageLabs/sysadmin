@@ -128,8 +128,9 @@ def update_doaj(branch='master'):
         run('git config user.email "us@cottagelabs.com"')
         run('git config user.name "Cottage Labs LLP"')
         stash = run('git stash')
-        run('git pull', pty=False)
+        run('git pull', pty=False)  # get any new branches
         run('git checkout ' + branch)
+        run('git pull', pty=False)  # again, in case the checkout actually switched the branch, pull from the remote now
         run('git submodule update', pty=False)
         if not 'No local changes to save' in stash:
             with warn_only():
@@ -146,7 +147,7 @@ def install_dependencies():
     sudo('sudo apt-get -q -y install libxml2-dev libxslt-dev python-dev lib32z1-dev')
 
     with cd(DOAJ_PATH_SRC):
-        run('source ../../bin/activate && pip install -e .')
+        run('source ../../bin/activate && pip install -r requirements.txt')
 
 
 @roles('staging')
