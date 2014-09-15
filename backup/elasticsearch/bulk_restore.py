@@ -113,7 +113,7 @@ def main(argv=None):
                 print '    HTTP response body:'
                 print r.text
             requests.post(config['ELASTIC_SEARCH_HOST'] + '/_flush')
-            sleep(5)
+            sleep(15)  # 5 sec has been shown to not be enough in practice
             deleted = True
     else:
         print '  DRY RUN: Not deleting anything.'
