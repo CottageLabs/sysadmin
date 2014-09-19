@@ -45,7 +45,7 @@ servers = {
     'clgate1': '95.85.56.138',
     'mark_test': '93.93.131.120',
     'richard_test': '5.101.97.169',
-    'pinky': '188.226.153.213',
+    'doaj-staging': '95.85.48.213',
     'cl_website': '46.235.224.100',
     'arttactic': '46.235.224.107',
     'oamonitor': '188.226.213.168',
@@ -63,7 +63,7 @@ env.roledefs.update(
         {
             'app': [servers['cl_website'], servers['arttactic'], servers['yonce']], 
             'gate': [servers['clgate1']],
-            'test': [servers['mark_test'], servers['richard_test'], servers['pinky'], servers['oamonitor']]
+            'test': [servers['mark_test'], servers['richard_test'], servers['doaj-staging'], servers['oamonitor']]
         }
 )
 

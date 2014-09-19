@@ -128,7 +128,10 @@ def update_doaj(branch='master'):
         run('git config user.email "us@cottagelabs.com"')
         run('git config user.name "Cottage Labs LLP"')
         stash = run('git stash')
+        run('git checkout master')  # so that we have a branch we can definitely pull in
+                                    # (in case we start from one that was set up for pushing only)
         run('git pull', pty=False)  # get any new branches
+        run('git branch --set-upstream {branch} origin/{branch}'.format(branch=branch))  # make sure we can pull here
         run('git checkout ' + branch)
         run('git pull', pty=False)  # again, in case the checkout actually switched the branch, pull from the remote now
         run('git submodule update', pty=False)
@@ -143,7 +146,7 @@ def install_dependencies():
     if env.host_string in env.roledefs['gate']:
         return
 
-    sudo('sudo apt-get update')
+    sudo('sudo apt-get update -q -y')
     sudo('sudo apt-get -q -y install libxml2-dev libxslt-dev python-dev lib32z1-dev')
 
     with cd(DOAJ_PATH_SRC):
