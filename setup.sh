@@ -170,7 +170,6 @@ mkdir /home/cloo/elasticsearch-exporter-src
 cd /home/cloo/elasticsearch-exporter-src
 npm install elasticsearch-exporter --production
 cd /home/cloo
-mv node_modules elasticsearch-exporter-src
 ln -s elasticsearch-exporter-src/node_modules/elasticsearch-exporter/exporter.js elasticsearch-exporter
 chown -R cloo:cloo elasticsearch-exporter*
 
