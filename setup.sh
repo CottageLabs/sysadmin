@@ -61,7 +61,7 @@ wget -O- https://download.newrelic.com/548C16BF.gpg | apt-key add -
 apt-get update
 apt-get install newrelic-sysmond
 nrsysmond-config --set license_key=<license key>
-sudo service start newrelic-sysmond
+sudo service newrelic-sysmond start
 # go to https://rpm.newrelic.com/accounts/526071/server_alert_policies
 # and assign your new server to the appropriate policy
 
