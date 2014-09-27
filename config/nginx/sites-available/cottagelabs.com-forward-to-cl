@@ -6,7 +6,7 @@ server {
     error_log /var/log/nginx/cottagelabs.com-forward-to-cl.error.log;
 
     location / {
-        proxy_pass http://80.240.138.125;
+        proxy_pass http://178.62.223.99;
         proxy_redirect off;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
