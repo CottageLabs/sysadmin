@@ -43,12 +43,20 @@ env.key_filename.extend(
 servers = {
     'yonce': '95.85.59.151',
     'clgate1': '95.85.56.138',
-    'mark_test': '93.93.131.120',
-    'richard_test': '5.101.97.169',
+    'bexcellent': '95.85.42.215',
+    'phd': '188.226.218.156',
+    'arttactic': '188.226.240.230',
+    'edaccess': '188.226.168.183',
     'doaj-staging': '95.85.48.213',
-    'cl_website': '46.235.224.100',
-    'arttactic': '46.235.224.107',
+    'clesc0': '5.101.107.186',
+    'clesc1': '80.240.138.83',
     'oamonitor': '188.226.213.168',
+    'uniboard': '95.85.52.130',
+    'arttactic-dev': '178.62.13.6',
+    'fundfind': '178.62.128.172',
+    'cl': '178.62.223.99',
+
+    'ooz': '5.101.97.169',
 }
 
 all_servers = []
@@ -61,26 +69,30 @@ ES_EXPORTER_BACKUPS_PATH = '/home/cloo/backups/elasticsearch-es-exporter'
 
 env.roledefs.update(
         {
-            'app': [servers['cl_website'], servers['arttactic'], servers['yonce']], 
-            'gate': [servers['clgate1']],
-            'test': [servers['mark_test'], servers['richard_test'], servers['doaj-staging'], servers['oamonitor']]
+            # Mainly to be used when calling a fabric task on multiple
+            # servers, e.g. to apply a security fix across.
+            # Call fabric with fab -R emanuil_servers task_name
+            'emanuil_servers': [servers['yonce'], servers['clgate1'], servers['doaj-staging'], servers['oamonitor'], servers['uniboard'], servers['fundfind'], servers['cl'], servers['ooz']], 
+            # ooz is part of this group since urgent security updates
+            # and such are performed by ET despite the server owner
+            # being RJ
+            'mark_servers': [servers['bexcellent'], servers['phd'], servers['edaccess'], servers['clesc0'], servers['clesc1']],
+            'martyn_servers': [servers['arttactic'], servers['arttactic-dev']],
+            'all_servers': all_servers,
         }
 )
 
 
-@roles('app', 'gate', 'test')
 def update_sysadmin():
     with warn_only():
         with cd(SYSADMIN_SRC_PATH):
             run('git pull', pty=False)
 
-@roles('app', 'gate', 'test')
 def push_sysadmin():
     with warn_only():
         with cd(SYSADMIN_SRC_PATH):
             run('git push')
 
-@roles('app', 'gate', 'test')
 def create_sysadmin():
     with warn_only():
         with cd('/opt'):
@@ -88,7 +100,6 @@ def create_sysadmin():
             sudo('chown cloo:cloo sysadmin')
             run('git clone https://github.com/CottageLabs/sysadmin.git', pty=False)
 
-@roles('app', 'gate', 'test')
 def apt_install(packages):
     '''
     Install one or more software packages across all hosts.
@@ -170,3 +181,11 @@ def __uncompress_backups(filename):
     with cd(ES_EXPORTER_BACKUPS_PATH):
         run('mv {filename}.data {filename}.data.gz'.format(filename=filename))
         run('gunzip {filename}.data.gz'.format(filename=filename))
+
+
+def disable_ssl3():
+    # A security fix, see https://poodle.io
+    with cd(SYSADMIN_SRC_PATH):
+        sudo('cp config/nginx/nginx.conf /etc/nginx/nginx.conf')
+        sudo('nginx -t')
+        sudo('nginx -s reload')
