@@ -164,8 +164,8 @@ def reload_staging():
     execute(reload_webserver, supervisor_doaj_task_name='doaj-staging', hosts=env.roledefs['staging'])
 
 @roles('test')
-def update_test(dev_branch="master"):
-    '''Update DOAJ on the test server. Optionally takes dev_branch=<name> arg, default "master".'''
+def update_test(dev_branch="develop"):
+    '''Update DOAJ on the test server. Optionally takes dev_branch=<name> arg, default "develop".'''
     update_doaj(dev_branch)
     sudo('sudo supervisorctl restart doaj-test')
 
