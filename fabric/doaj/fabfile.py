@@ -154,7 +154,7 @@ def install_dependencies():
 
 
 @roles('staging')
-def try_on_staging(branch='master'):
+def update_staging(branch='master'):
     '''Update the staging server with the latest live code and reload the app.'''
     execute(update_doaj, branch=branch, hosts=env.roledefs['staging'])
     execute(reload_staging)
