@@ -28,3 +28,4 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 */30	*	* 	* 	*	export NOW=`date +\%F_\%H\%M\%S` ; export DOAJENV=staging ; echo "start timestamp $NOW" >> /home/cloo/cron-logs/doaj-news-fetch.log 2>&1 && /opt/doaj/bin/python /opt/doaj/src/doaj/portality/scripts/news.py >> /home/cloo/cron-logs/doaj-news-fetch.log 2>&1
 */30	*	* 	*	*	export DOAJENV=staging ; /opt/doaj/bin/python /opt/doaj/src/doaj/portality/scripts/journalcsv.py >> /home/cloo/cron-logs/doaj-journal-csv_`date +\%F_\%H\%M`.log 2>&1
 0	2	* 	* 	*	export DOAJENV=staging ; /opt/doaj/bin/python /opt/doaj/src/doaj/portality/scripts/toc.py >> /home/cloo/cron-logs/doaj-toc_`date +\%F_\%H\%M`.log 2>&1
+*/10	*	* 	*	*	export NOW=`date +\%F_\%H\%M\%S` ; export DOAJENV=staging ; echo -e "\n\nstart timestamp $NOW" >> /home/cloo/cron-logs/doaj-ingest-reapps.log && /opt/doaj/bin/python /opt/doaj/src/doaj/portality/scripts/ingestreapplications.py >> /home/cloo/cron-logs/doaj-ingest-reapps.log 2>&1
