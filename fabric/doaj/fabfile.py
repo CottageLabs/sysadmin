@@ -52,11 +52,12 @@ env.key_filename.extend(
 )
 
 
+DOAJ_IP = '178.62.116.49'
 YONCE_IP = '95.85.59.151'
 CLGATE1_IP = '95.85.56.138'
 RICHARD_TEST_IP = '5.101.97.169'
 DOAJ_STAGING_IP = '95.85.48.213'
-APP_SERVER_NAMES = {'YONCE': YONCE_IP}  # the gateway nginx config files are named after which app server the gateway directs traffic to
+APP_SERVER_NAMES = {'DOAJ': DOAJ_IP}  # the gateway nginx config files are named after which app server the gateway directs traffic to
 TEST_SERVER_NAMES = {'RICHARD_TEST': RICHARD_TEST_IP}
 STAGING_SERVER_NAMES = {'DOAJ_STAGING': DOAJ_STAGING_IP}
 
@@ -77,7 +78,7 @@ GATE_NGINX_CFG_SUFFIX = '-server-with-local-static'
 # all the time when running Fabric.
 env.roledefs.update(
         {
-            'app': [YONCE_IP], 
+            'app': [DOAJ_IP], 
             'gate': [CLGATE1_IP],
             'test': [RICHARD_TEST_IP],
             'staging': [DOAJ_STAGING_IP]
@@ -123,7 +124,7 @@ def switch_doaj(from_, to_, dont_sync_suggestions=None):
     execute(update_doaj, hosts=[CLGATE1_IP])  # update static files on the gateway
 
 @roles('app', 'gate')
-def update_doaj(branch='master'):
+def update_doaj(branch='reverted_master'):
     with cd(DOAJ_PATH_SRC):
         run('git config user.email "us@cottagelabs.com"')
         run('git config user.name "Cottage Labs LLP"')
