@@ -42,7 +42,7 @@ env.key_filename.extend(
 
 servers = {
     'yonce': '95.85.59.151',
-    'clgate1': '95.85.56.138',
+    'clgate1': '178.62.75.236',
     'bexcellent': '95.85.42.215',
     'phd': '188.226.218.156',
     'arttactic': '188.226.240.230',
