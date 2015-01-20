@@ -1,3 +1,4 @@
+import sys
 from fabric.api import env, run, sudo, cd, abort, roles, execute, warn_only
 
 env.use_ssh_config = True  # username, identity file (key), hostnames for machines will all be loaded from ~/.ssh/config
@@ -124,7 +125,11 @@ def switch_doaj(from_, to_, dont_sync_suggestions=None):
     execute(update_doaj, hosts=[CLGATE1_IP])  # update static files on the gateway
 
 @roles('app', 'gate')
-def update_doaj(branch='reverted_master'):
+def update_doaj(branch='production', tag=""):
+    if not tag and branch == 'production':
+        print 'Please specify a tag to deploy to production'
+        sys.exit(1)
+
     with cd(DOAJ_PATH_SRC):
         run('git config user.email "us@cottagelabs.com"')
         run('git config user.name "Cottage Labs LLP"')
@@ -135,7 +140,8 @@ def update_doaj(branch='reverted_master'):
         run('git branch --set-upstream {branch} origin/{branch}'.format(branch=branch))  # make sure we can pull here
         run('git checkout ' + branch)
         run('git pull', pty=False)  # again, in case the checkout actually switched the branch, pull from the remote now
-        run('git submodule update', pty=False)
+        run('git checkout {0}'.format(tag))
+        run('git submodule update --init', pty=False)
         if not 'No local changes to save' in stash:
             with warn_only():
                 run('git stash apply')
@@ -155,7 +161,7 @@ def install_dependencies():
 
 
 @roles('staging')
-def update_staging(branch='master'):
+def update_staging(branch='production'):
     '''Update the staging server with the latest live code and reload the app.'''
     execute(update_doaj, branch=branch, hosts=env.roledefs['staging'])
     execute(reload_staging)
