@@ -14,3 +14,24 @@ server {
 	# proxy_buffering off;
     }
 }
+
+server {
+    listen          443;
+    server_name     .cottagelabs.com;
+
+    ssl on;
+    ssl_certificate /etc/nginx/CERTS/cottagelabs.com.chained.crt;
+    ssl_certificate_key /etc/nginx/CERTS/cottagelabs.key;
+
+    access_log /var/log/nginx/cottagelabs.com-forward-to-cl.access.log;
+    error_log /var/log/nginx/cottagelabs.com-forward-to-cl.error.log;
+
+    location / {
+        proxy_pass https://178.62.223.99;
+        proxy_redirect off;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        # proxy_buffering off;
+    }
+}
