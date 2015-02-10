@@ -140,7 +140,8 @@ def update_doaj(branch='production', tag=""):
         run('git branch --set-upstream {branch} origin/{branch}'.format(branch=branch))  # make sure we can pull here
         run('git checkout ' + branch)
         run('git pull', pty=False)  # again, in case the checkout actually switched the branch, pull from the remote now
-        run('git checkout {0}'.format(tag))
+        if tag:
+            run('git checkout {0}'.format(tag))
         run('git submodule update --init', pty=False)
         if not 'No local changes to save' in stash:
             with warn_only():
