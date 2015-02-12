@@ -274,3 +274,10 @@ def print_doaj_app_config():
 @roles('app')
 def reload_webserver(supervisor_doaj_task_name='doaj-production'):
     sudo('kill -HUP $(sudo supervisorctl pid {0})'.format(supervisor_doaj_task_name))
+
+
+@roles('app', 'gate')
+def deploy_live(branch='production', tag=""):
+    update_doaj(branch=branch, tag=tag)
+    execute(reload_webserver, hosts=env.roledefs['app'])
+
