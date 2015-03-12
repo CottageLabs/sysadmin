@@ -47,9 +47,10 @@ def main(argv=None):
         argv = sys.argv
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("mapping_filename")
     parser.add_argument("data_filename")
     BATCH_SIZE_DEFAULT = 2000
+    parser.add_argument("-m", "--mapping-file", help="File containing the mappings to be read into Python and sent to ES.")
+    parser.add_argument("-nm", "--no-mapping", action="store_true", help="Do not attempt to read mapping file or restore mappings to ES, just bulk data upload.")
     parser.add_argument("-i", "--index", help="Pass the index name when you are restoring a single index.")
     parser.add_argument("-b", "--batch-size", type=int, help="Size of each batch of items sent to ES. Default: {0}".format(BATCH_SIZE_DEFAULT))
     parser.add_argument("-t", "--dry-run", action="store_true")
@@ -58,7 +59,8 @@ def main(argv=None):
     parser.add_argument("-s", "--sleep", type=float, help="Number of seconds to sleep between batches, floats are allowed. Pass 0 to disable sleeping. Default: the first digit of your batch size. If sending 20 items, sleep 2 seconds between them. Same for 200 or 200'000 items. Sending 30, 3'000 (and so on) items will sleep for 3 seconds by default.")
     args=parser.parse_args(argv[1:])
 
-    mapping_filename = args.mapping_filename
+    dont_restore_mapping = args.no_mapping
+    mapping_file = args.mapping_file
     data_filename = args.data_filename
     
     index = args.index
@@ -87,6 +89,8 @@ def main(argv=None):
     else:
         if args.no_destroy_all:
             delete = False
+        elif dont_restore_mapping:
+            delete = False
         else:
             # we don't know, we need to ask
             print 'If you want to update the mappings you will have to reindex the data. With this in mind...'
@@ -97,6 +101,8 @@ def main(argv=None):
         print 'DELETING all data in {delete_what}.'.format(delete_what=delete_what)
     else:
         print 'NOT DELETING any data in ES.'
+        if dont_restore_mapping:
+            print '... because you chose not to restore mappings.'
 
     deleted = False
     if not dry_run:
@@ -120,8 +126,10 @@ def main(argv=None):
     
     if not deleted and not dry_run:
         print 'Skipping mappings update, you chose not to delete any data.'
+    elif dont_restore_mapping:
+        print 'You chose not to restore mappings or read in the mappings file.'
     else:
-        with open(mapping_filename, 'rb') as i:
+        with open(mapping_file, 'rb') as i:
             data = json.loads(i.read())
             if index:
                 data = {index: data}
