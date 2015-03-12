@@ -8,8 +8,6 @@ from datetime import datetime
 import argparse
 
 config = {}
-config['ELASTIC_SEARCH_HOST'] = 'http://localhost:9200'
-config['ELASTIC_SEARCH_HOST'] = config['ELASTIC_SEARCH_HOST'].rstrip('/')
 config['RETRY_ES'] = 30
 
 def put_mapping(mapping_dict):
@@ -49,6 +47,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("data_filename")
     BATCH_SIZE_DEFAULT = 2000
+    parser.add_argument("-es", "--elasticsearch-host", default="http://localhost:9200", help="Elasticsearch host and port as a string e.g. \"http://localhost:9200\"")
     parser.add_argument("-m", "--mapping-file", help="File containing the mappings to be read into Python and sent to ES.")
     parser.add_argument("-nm", "--no-mapping", action="store_true", help="Do not attempt to read mapping file or restore mappings to ES, just bulk data upload.")
     parser.add_argument("-i", "--index", help="Pass the index name when you are restoring a single index.")
@@ -58,6 +57,9 @@ def main(argv=None):
     parser.add_argument("-n", "--no-destroy-all", action="store_true", help="Pass this to skip deleting all indices in the target ES instance and skip the question this script would otherwise ask about this. NOTE: The script will skip updating the mappings if you do not agree to delete all data. (You have to reindex after a mapping update.)")
     parser.add_argument("-s", "--sleep", type=float, help="Number of seconds to sleep between batches, floats are allowed. Pass 0 to disable sleeping. Default: the first digit of your batch size. If sending 20 items, sleep 2 seconds between them. Same for 200 or 200'000 items. Sending 30, 3'000 (and so on) items will sleep for 3 seconds by default.")
     args=parser.parse_args(argv[1:])
+
+    config['ELASTIC_SEARCH_HOST'] = args.elasticsearch_host
+    config['ELASTIC_SEARCH_HOST'] = config['ELASTIC_SEARCH_HOST'].rstrip('/')
 
     dont_restore_mapping = args.no_mapping
     mapping_file = args.mapping_file
