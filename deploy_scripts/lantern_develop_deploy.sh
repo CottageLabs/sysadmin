@@ -25,7 +25,9 @@ cd ..
 
 pip install -e .
 
-kill -HUP $(sudo supervisorctl pid lantern-test)
-supervisorctl restart lantern-test-daemon
-supervisorctl restart oagr-test-daemon
+sudo supervisorctl reread
+sudo supervisorctl update
+sudo supervisorctl restart lantern-test
+sudo supervisorctl restart lantern-test-daemon
+sudo supervisorctl restart oagr-test-daemon
 sudo nginx -t && sudo nginx -s reload
