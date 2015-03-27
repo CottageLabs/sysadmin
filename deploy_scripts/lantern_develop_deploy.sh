@@ -7,6 +7,18 @@ sudo ln -sf /etc/nginx/sites-available/lantern-test /etc/nginx/sites-enabled/lan
 
 sudo apt-get update -q -y
 sudo apt-get -q -y install libxml2-dev libxslt-dev python-dev lib32z1-dev
+
+if [ ! -d /opt/lantern ]; then
+    cd /opt
+    sudo mkdir lantern
+    sudo chown cloo:cloo lantern
+    virtualenv -p python2.7 lantern
+    cd lantern
+    mkdir src
+    cd src
+    git clone https://github.com/CottageLabs/lantern.git lantern
+fi
+
 cd /opt/lantern
 . bin/activate
 cd src/lantern
