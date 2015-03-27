@@ -23,7 +23,7 @@ server {
     proxy_read_timeout 600s;
 
     location / {
-        proxy_pass http://5.101.97.169;
+        proxy_pass http://178.62.191.218;
         proxy_redirect off;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
