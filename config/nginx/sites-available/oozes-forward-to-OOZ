@@ -1,0 +1,33 @@
+server {
+    listen          80;
+    server_name     oozes.cottagelabs.com;
+    access_log /var/log/nginx/oozes-forward-to-OOZ.access.log;
+    error_log /var/log/nginx/oozes-forward-to-OOZ.error.log;
+    return          301 https://$server_name$request_uri;
+}
+
+server {
+    listen          443 ssl;
+    server_name     oozes.cottagelabs.com;
+
+    ssl_certificate /etc/nginx/CERTS/cl_wildcard/*.cottagelabs.com.chained.crt;
+    ssl_certificate_key /etc/nginx/CERTS/cl_wildcard/*.cottagelabs.com.key;
+    
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+    ssl_ciphers "HIGH:!aNULL:!MD5 or HIGH:!aNULL:!MD5:!3DES";
+    ssl_prefer_server_ciphers on;
+
+    access_log /var/log/nginx/oozes-forward-to-OOZ.access.log;
+    error_log /var/log/nginx/oozes-forward-to-OOZ.error.log;
+
+    proxy_read_timeout 600s;
+
+    location / {
+        proxy_pass http://178.62.191.218;
+        proxy_redirect off;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+}

@@ -1,6 +1,6 @@
 server {
     listen          80;
-    server_name     doaj.cottagelabs.com test.doaj.cottagelabs.com;
+    server_name     test.doaj.cottagelabs.com;
 
     access_log /var/log/nginx/test-doaj-to-trich-server.access.log;
     error_log /var/log/nginx/test-doaj-to-trich-server.error.log;
@@ -19,7 +19,7 @@ server {
 
 server {
     listen          443;
-    server_name     doaj.cottagelabs.com test.doaj.cottagelabs.com;
+    server_name     test.doaj.cottagelabs.com;
 
     ssl on;
     ssl_certificate /etc/nginx/CERTS/cottagelabs.com.chained.crt;
