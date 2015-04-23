@@ -53,18 +53,17 @@ env.key_filename.extend(
 )
 
 
-DOAJ_IP = '178.62.116.49'
-YONCE_IP = '95.85.59.151'
-CLGATE1_IP = '178.62.75.236'
+DOAJGATE_IP = '46.101.12.197'
+DOAJAPP1_IP = '46.101.38.194'
 RICHARD_TEST_IP = '5.101.97.169'
 DOAJ_STAGING_IP = '95.85.48.213'
-APP_SERVER_NAMES = {'DOAJ': DOAJ_IP}  # the gateway nginx config files are named after which app server the gateway directs traffic to
+APP_SERVER_NAMES = {'DOAJGATE': DOAJGATE_IP}  # the gateway nginx config files are named after which app server the gateway directs traffic to
 TEST_SERVER_NAMES = {'RICHARD_TEST': RICHARD_TEST_IP}
 STAGING_SERVER_NAMES = {'DOAJ_STAGING': DOAJ_STAGING_IP}
 
-env.hosts = [CLGATE1_IP]
+env.hosts = [DOAJGATE_IP]
 
-DOAJ_PATH_SRC = '/opt/doaj/src/doaj'  # path on remote servers to the DOAJ app
+DOAJ_PATH_SRC = '/home/cloo/repl/apps/doaj/src/doaj'  # path on remote servers to the DOAJ app
 DOAJ_APP_PORT = 5550  # servers can access the application directly at 5550, the normal port is 5050
                       # access to 5550 is restricted to the server IP-s by the firewall however
 DOAJ_USER_APP_PORT = 5050
@@ -79,52 +78,14 @@ GATE_NGINX_CFG_SUFFIX = '-server-with-local-static'
 # all the time when running Fabric.
 env.roledefs.update(
         {
-            'app': [DOAJ_IP], 
-            'gate': [CLGATE1_IP],
+            'app': [DOAJAPP1_IP],
+            'gate': [DOAJGATE_IP],
             'test': [RICHARD_TEST_IP],
             'staging': [DOAJ_STAGING_IP]
         }
 )
 
-def switch_doaj(from_, to_, dont_sync_suggestions=None):
-    '''Run this to switch from using one app server to another for the live DOAJ.'''
-    FROM, source_host, TO, target_host = _get_hosts(from_, to_)
-
-    # set the hosts to the 2 application servers passed in
-    # saves us from having to wrap each single command in
-    # execute(command, hosts=[host1,host2])
-    # it does mean we have to wrap SOME commands, which run only on one
-    # host, or which run on all the hosts incl. the gateway
-
-    # TODO: fix this calling of tasks with execute everywhere
-    app_servers = [source_host, target_host]
-
-    execute(update_doaj, hosts=[target_host])  # do not update the source server, may break the live site while we're preparing the new server
-                                                            # the gateway serves static files like Javascript so it should not be updated till the end either
-    raw_input('Everything OK, no unexpected changes or commits present? Press <Enter>. If not, press Ctrl+C to terminate now.')
-    raw_input('Make sure settings.py and especially secret_settings.py are correct on {0}. <Enter> to continue when you\'ve done that.'.format(to_))
-    if not dont_sync_suggestions:
-        sync_suggestions(from_, to_)
-    # sync xml uploads
-    execute(push_xml_uploads, hosts=[source_host])
-    execute(pull_xml_uploads, hosts=[target_host])
-    print
-    print '-- Check the article and journal counts are the same on all app servers now.'
-    print 
-    execute(count_journals, hosts=app_servers)
-    execute(count_articles, hosts=app_servers)
-    raw_input('Journal and article counts equal? Press <Enter>. If not, press Ctrl+C to terminate now.')
-    execute(reload_webserver, hosts=[target_host])
-    execute(check_doaj_running, hosts=app_servers)
-    raw_input('Is the app running on port {app_port} on all app servers as needed by nginx? Press <Enter>. If not, press Ctrl+C to terminate now.'
-            .format(app_port=DOAJ_USER_APP_PORT)
-    )
-    execute(print_doaj_app_config, hosts=app_servers)
-    raw_input('Is the config correct for all application servers? Press <Enter>. If not, go fix it and *then* press <Enter>. Or Ctrl+C to terminate now.')
-    execute(gate_switch_doaj, from_=from_, to_=to_, hosts=[CLGATE1_IP])
-    execute(update_doaj, hosts=[CLGATE1_IP])  # update static files on the gateway
-
-@roles('app', 'gate')
+@roles('gate')
 def update_doaj(branch='production', tag=""):
     if not tag and branch == 'production':
         print 'Please specify a tag to deploy to production'
@@ -133,33 +94,15 @@ def update_doaj(branch='production', tag=""):
     with cd(DOAJ_PATH_SRC):
         run('git config user.email "us@cottagelabs.com"')
         run('git config user.name "Cottage Labs LLP"')
-        stash = run('git stash')
         run('git checkout master')  # so that we have a branch we can definitely pull in
                                     # (in case we start from one that was set up for pushing only)
         run('git pull', pty=False)  # get any new branches
-        run('git branch --set-upstream {branch} origin/{branch}'.format(branch=branch))  # make sure we can pull here
         run('git checkout ' + branch)
         run('git pull', pty=False)  # again, in case the checkout actually switched the branch, pull from the remote now
         if tag:
             run('git checkout {0}'.format(tag))
         run('git submodule update --init', pty=False)
-        if not 'No local changes to save' in stash:
-            with warn_only():
-                run('git stash apply')
-    install_dependencies()
-
-@roles('app', 'staging', 'test')
-def install_dependencies():
-    # do not try this on the gateway server(s)
-    if env.host_string in env.roledefs['gate']:
-        return
-
-    sudo('sudo apt-get update -q -y')
-    sudo('sudo apt-get -q -y install libxml2-dev libxslt-dev python-dev lib32z1-dev')
-
-    with cd(DOAJ_PATH_SRC):
-        run('source ../../bin/activate && pip install -r requirements.txt')
-
+        run('deploy/{0}_doaj_deploy-gateway.sh'.format(branch))
 
 @roles('staging')
 def update_staging(branch='production'):
@@ -204,56 +147,11 @@ def pull_xml_uploads():
         pty=False
     )
 
-@roles('gate')
-def gate_switch_doaj(from_, to_):
-    '''Perform the actual switching of nginx configs and reload nginx on the gateway.'''
-    FROM, source_host, TO, target_host = _get_hosts(from_, to_)
-    with cd('/etc/nginx'):
-        # determine which config file will be used
-        old_nginx_conf = GATE_NGINX_CFG_PREFIX + FROM + GATE_NGINX_CFG_SUFFIX
-        new_nginx_conf = GATE_NGINX_CFG_PREFIX + TO + GATE_NGINX_CFG_SUFFIX
-        print
-        raw_input("""
-Nginx configurations will now be:
-
-ENABLED: {new}
-DISABLED: {old}
-
-on the gateway. <Enter> to proceed, Ctrl+C to terminate."""
-                .format(new=new_nginx_conf, old=old_nginx_conf)
-        )
-        sudo('ln -s ../sites-available/{new} sites-enabled/{new}'.format(new=new_nginx_conf))
-        sudo('rm sites-enabled/{old}'.format(old=old_nginx_conf))
-        print
-        print '-- Listing all nginx configs and testing the overall nginx configuration.'
-        print
-        run('ls -l sites-enabled')
-        sudo('nginx -t')
-        raw_input('All OK? Press <Enter>. Ctrl+C to terminate now. If you proceed, the gateway nginx will reload its config and traffic will switch to your desired application server NOW.')
-        sudo('nginx -s reload')
-
 def sync_suggestions(from_, to_):
     FROM, source_host, TO, target_host = _get_hosts(from_, to_)
     execute(_sync_suggestions, FROM=FROM, hosts=[target_host])
     execute(count_suggestions, hosts=[source_host, target_host])
     raw_input('Suggestion counts OK? Press <Enter>. If not, press Ctrl+C to terminate now.')
-
-def _sync_suggestions(FROM):
-    run('/opt/sysadmin/backup/elasticsearch/sync_doaj_suggestions.py "http://{FROM}:{app_port}/query/suggestion?size={suggestion_count}" "http://localhost:{app_port}/query/suggestion?size={suggestion_count}"'
-            .format(FROM=APP_SERVER_NAMES[FROM], app_port=DOAJ_APP_PORT, suggestion_count=100000)
-    )
-
-@roles('app')
-def count_suggestions():
-    run('curl localhost:{app_port}/query/suggestion/_count'.format(app_port=DOAJ_APP_PORT))
-
-@roles('app')
-def count_journals():
-    run('curl localhost:{app_port}/query/journal/_count'.format(app_port=DOAJ_APP_PORT))
-
-@roles('app')
-def count_articles():
-    run('curl localhost:{app_port}/query/article/_count'.format(app_port=DOAJ_APP_PORT))
 
 @roles('app')
 def check_doaj_running():
@@ -275,9 +173,7 @@ def print_doaj_app_config():
 def reload_webserver(supervisor_doaj_task_name='doaj-production'):
     sudo('kill -HUP $(sudo supervisorctl pid {0})'.format(supervisor_doaj_task_name))
 
-
-@roles('app', 'gate')
+@roles('gate')
 def deploy_live(branch='production', tag=""):
     update_doaj(branch=branch, tag=tag)
     execute(reload_webserver, hosts=env.roledefs['app'])
-
