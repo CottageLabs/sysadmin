@@ -139,7 +139,51 @@ sudo vim /etc/elasticsearch/elasticsearch.yml
 # bootstrap.mlockall: true
 # discovery.zen.ping.multicast.enabled: false
 
-sudo service elasticsearch restart  # you should be done. Check with curl:9200 and htop that ES is running and taking the memory you expect.
+# It's a wise idea to disable public access to ES
+sudo ufw deny in on eth0 to any port 9200
+sudo ufw deny in on eth0 to any port 9300
+sudo ufw status  # check rules and that firewall is active
+# This still leaves the private network and localhost:9200 functional
+
+sudo service elasticsearch restart  # you should be done. Check with curl localhost:9200 and htop that ES is running and taking the memory you expect.
+
+### RESTORING FROM ES 1.x BACKUPS
+
+# install the ES S3 plugin
+curl -s "localhost:9200/_nodes/settings?pretty=true" | grep "home"  # find out where elasticsearch's executable files live
+cd /usr/share/elasticsearch  # usually /usr/share/elasticsearch with the ES .deb package, but amend as per the grep result above this line if needed
+
+# Find out which version of the plugin you need for your ES here:
+# https://github.com/elastic/elasticsearch-cloud-aws#aws-cloud-plugin-for-elasticsearch
+sudo bin/plugin install elasticsearch/elasticsearch-cloud-aws/2.4.2
+sudo service elasticsearch restart
+
+# register the backup repo
+curl -XPUT 'http://localhost:9200/_snapshot/{BACKUP_REPO_NAME}' -d '{
+    "type": "s3",
+    "settings": {
+        "bucket": "{YOUR BUCKET}",
+        "region": "{YOUR REGION, usually eu-west-1 for CL}",
+        "access_key": "{the ES AWS access key - one PER PROJECT}",
+        "secret_key": "{the ES AWS secret key - one PER PROJECT}"
+    }
+}'
+# Make your own restricted AWS user for each project! Ask ET how, or see
+# https://github.com/elastic/elasticsearch-cloud-aws#recommended-s3-permissions if making your own.
+
+# You should get {"acknowledged":true} after the command above.
+
+# See all available snapshots for restore
+# curl localhost:9200/_snapshot/doaj_s3/_all?pretty=true
+
+curl -XPOST "http://localhost:9200/_snapshot/{SNAPSHOT_REPO}/{SPECIFIC_SNAPSHOT}/_restore"
+# You should get {"accepted":true} to that.
+# After that until the restore completes (at about 15MiB/s in ET's experience) you can look at how far it's gone by doing
+# curl -s localhost:9200/_status?pretty=true | grep "primary_size_in_bytes" && date
+
+# After your restore finishes, if this is a TEST MACHINE, you should delete the repository so that you don't accidentally write to it
+curl -XDELETE "localhost:9200/_snapshot/doaj_s3"
+
 
 # get elasticsearch 0.90.7 - old instructions for pre-1.x ES
 cd /opt
