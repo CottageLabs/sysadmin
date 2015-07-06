@@ -38,3 +38,6 @@ nosetests.xml
 
 # Vim swap files
 *.swp
+
+# PyCharm
+.idea
