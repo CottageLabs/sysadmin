@@ -116,7 +116,32 @@ ln -s /usr/local/bin/supervisord /usr/bin/supervisord
 
 ##### OPTIONAL SETUP #####
 
-# get elasticsearch
+# get new elasticsearch, 1.4.4 (now available as 1.5.x and later, so if you 
+# think you're better off with  a newer one, check ES' website for the right link)
+java -version  # make sure you are happy with what this returns, otherwise upgrade it
+wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.4.4.deb
+sudo dpkg -i elasticsearch-1.4.4.deb
+
+# to run on boot, ES recommends
+# sudo update-rc.d elasticsearch defaults 95 10
+# sudo /etc/init.d/elasticsearch start
+# We generally use sysv-rc-conf for the more intuitive UI, but feel free to use whichever.
+sudo sysv-rc-conf  # select "elasticsearch" for runlevels 2-5
+
+sudo vim /etc/default/elasticsearch
+# set
+# ES_HEAP_SIZE=1g  # or about half the RAM on the server if RAM is up to 8GB. Feel free to set to 12GB if RAM is 16GB. Remember a large disk cache enhances ES performance, so don't just allocate all the RAM to ES' heap. And obviously you may need RAM for other things.
+# MAX_LOCKED_MEMORY=unlimited
+# RESTART_ON_UPGRADE=false
+
+sudo vim /etc/elasticsearch/elasticsearch.yml
+# set
+# bootstrap.mlockall: true
+# discovery.zen.ping.multicast.enabled: false
+
+sudo service elasticsearch restart  # you should be done. Check with curl:9200 and htop that ES is running and taking the memory you expect.
+
+# get elasticsearch 0.90.7 - old instructions for pre-1.x ES
 cd /opt
 curl -L https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-0.90.7.tar.gz -o elasticsearch.tar.gz
 tar -xzvf elasticsearch.tar.gz
