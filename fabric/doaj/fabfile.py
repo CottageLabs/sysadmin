@@ -55,7 +55,7 @@ env.key_filename.extend(
 
 DOAJGATE_IP = '46.101.12.197'
 DOAJAPP1_IP = '46.101.38.194'
-RICHARD_TEST_IP = '5.101.97.169'
+DOAJ_TEST_IP = '178.62.92.200'
 DOAJ_STAGING_IP = '95.85.48.213'
 APP_SERVER_NAMES = {'DOAJGATE': DOAJGATE_IP}  # the gateway nginx config files are named after which app server the gateway directs traffic to
 TEST_SERVER_NAMES = {'RICHARD_TEST': RICHARD_TEST_IP}
@@ -63,7 +63,8 @@ STAGING_SERVER_NAMES = {'DOAJ_STAGING': DOAJ_STAGING_IP}
 
 env.hosts = [DOAJGATE_IP]
 
-DOAJ_PATH_SRC = '/home/cloo/repl/apps/doaj/src/doaj'  # path on remote servers to the DOAJ app
+DOAJ_PROD_PATH_SRC = '/home/cloo/repl/apps/doaj/src/doaj'
+DOAJ_TEST_PATH_SRC = '/home/cloo/repl/test/doaj/src/doaj'
 DOAJ_APP_PORT = 5550  # servers can access the application directly at 5550, the normal port is 5050
                       # access to 5550 is restricted to the server IP-s by the firewall however
 DOAJ_USER_APP_PORT = 5050
@@ -80,18 +81,23 @@ env.roledefs.update(
         {
             'app': [DOAJAPP1_IP],
             'gate': [DOAJGATE_IP],
-            'test': [RICHARD_TEST_IP],
+            'test': [DOAJ_TEST_IP],
             'staging': [DOAJ_STAGING_IP]
         }
 )
 
 @roles('gate')
-def update_doaj(branch='production', tag=""):
+def update_doaj(branch='production', tag="", doajdir=DOAJ_PROD_PATH_SRC):
     if not tag and branch == 'production':
         print 'Please specify a tag to deploy to production'
         sys.exit(1)
 
-    with cd(DOAJ_PATH_SRC):
+    if doajdir == DOAJ_PROD_PATH_SRC and branch != 'production':
+        print 'You\'re deploying something other than the production branch to the live DOAJ app location.'
+        print 'Aborting execution. If you really want to do this edit this script and comment the guard out.'
+        sys.exit(1)
+
+    with cd(doajdir):
         run('git config user.email "us@cottagelabs.com"')
         run('git config user.name "Cottage Labs LLP"')
         run('git checkout master')  # so that we have a branch we can definitely pull in
@@ -114,11 +120,10 @@ def update_staging(branch='production'):
 def reload_staging():
     execute(reload_webserver, supervisor_doaj_task_name='doaj-staging', hosts=env.roledefs['staging'])
 
-@roles('test')
+@roles('gate')
 def update_test(dev_branch="develop"):
-    '''Update DOAJ on the test server. Optionally takes dev_branch=<name> arg, default "develop".'''
-    update_doaj(dev_branch)
-    sudo('sudo supervisorctl restart doaj-test')
+    '''Update DOAJ on the gate and test server. Optionally takes dev_branch=<name> arg, default "develop".'''
+    update_doaj(branch=dev_branch, doajdir=DOAJ_TEST_PATH_SRC)
 
 def _get_hosts(from_, to_):
     FROM = from_.upper()
@@ -135,7 +140,7 @@ def push_xml_uploads():
     # of file .. bit pointless for now as the scheduled backups
     # themselves have those bits hardcoded too
     run("/home/cloo/backups/backup2s3.sh {doaj_path}/upload/ /home/cloo/backups/doaj-xml-uploads/ dummy s3://doaj-xml-uploads >> /home/cloo/backups/logs/doaj-xml-uploads_`date +%F_%H%M`.log 2>&1"
-            .format(doaj_path=DOAJ_PATH_SRC),
+            .format(doaj_path=DOAJ_PROD_PATH_SRC),
         pty=False
     )
 
@@ -143,7 +148,7 @@ def push_xml_uploads():
 def pull_xml_uploads():
     # TODO: same as push_xml_uploads
     run("/home/cloo/backups/restore_from_s3.sh s3://doaj-xml-uploads {doaj_path}/upload/ /home/cloo/backups/doaj-xml-uploads/"
-            .format(doaj_path=DOAJ_PATH_SRC),
+            .format(doaj_path=DOAJ_PROD_PATH_SRC),
         pty=False
     )
 
@@ -167,7 +172,7 @@ def print_doaj_app_config():
     }
     for file_, keys in print_keys.items():
         for key in keys:
-            run('grep {key} {doaj_path}/portality/{file_}'.format(file_=file_, key=key, doaj_path=DOAJ_PATH_SRC))
+            run('grep {key} {doaj_path}/portality/{file_}'.format(file_=file_, key=key, doaj_path=DOAJ_PROD_PATH_SRC))
 
 @roles('app')
 def reload_webserver(supervisor_doaj_task_name='doaj-production'):
@@ -177,3 +182,8 @@ def reload_webserver(supervisor_doaj_task_name='doaj-production'):
 def deploy_live(branch='production', tag=""):
     update_doaj(branch=branch, tag=tag)
     execute(reload_webserver, hosts=env.roledefs['app'])
+
+@roles('gate')
+def deploy_test(branch='develop', tag=""):
+    update_test(branch=branch, tag=tag)
+    execute(reload_webserver(supervisor_doaj_task_name='doaj-test'), hosts=env.roledefs['test'])
