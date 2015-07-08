@@ -58,7 +58,7 @@ DOAJAPP1_IP = '46.101.38.194'
 DOAJ_TEST_IP = '178.62.92.200'
 DOAJ_STAGING_IP = '95.85.48.213'
 APP_SERVER_NAMES = {'DOAJGATE': DOAJGATE_IP}  # the gateway nginx config files are named after which app server the gateway directs traffic to
-TEST_SERVER_NAMES = {'RICHARD_TEST': RICHARD_TEST_IP}
+TEST_SERVER_NAMES = {'DOAJ_TEST': DOAJ_TEST_IP}
 STAGING_SERVER_NAMES = {'DOAJ_STAGING': DOAJ_STAGING_IP}
 
 env.hosts = [DOAJGATE_IP]
