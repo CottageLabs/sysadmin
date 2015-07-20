@@ -1,4 +1,4 @@
-import sys
+import sys, os, time
 from fabric.api import env, run, sudo, cd, abort, roles, execute, warn_only
 
 env.use_ssh_config = True  # username, identity file (key), hostnames for machines will all be loaded from ~/.ssh/config
@@ -28,6 +28,8 @@ DOAJ_STAGING_IP = '95.85.48.213'
 APP_SERVER_NAMES = {'DOAJGATE': DOAJGATE_IP}  # the gateway nginx config files are named after which app server the gateway directs traffic to
 TEST_SERVER_NAMES = {'DOAJ_TEST': DOAJ_TEST_IP}
 STAGING_SERVER_NAMES = {'DOAJ_STAGING': DOAJ_STAGING_IP}
+
+STAGING_DO_NAME = 'doaj-staging'
 
 env.hosts = [DOAJGATE_IP]
 
@@ -148,3 +150,73 @@ def deploy_live(branch='production', tag=""):
 def deploy_test(branch='develop', tag=""):
     update_doaj(branch=branch, tag=tag, doajdir=DOAJ_TEST_PATH_SRC)
     execute(reload_webserver(supervisor_doaj_task_name='doaj-test'), hosts=env.roledefs['test'])
+
+@roles('gate')
+def create_staging(tag):
+    if _find_staging_server(STAGING_DO_NAME):
+        print "The staging server already exists. Destroy it with destroy_staging task first if you want, then rerun this."
+        sys.exit(1)
+    ip = _create_staging_server(STAGING_DO_NAME)
+    execute(_setup_staging_server, hosts=[ip])
+    print 'Staging server set up complete. SSH into {0}'.format(ip)
+
+def destroy_staging():
+    staging = _find_staging_server(STAGING_DO_NAME)
+    if not staging:
+        print "Can't find a droplet with the name {0}, so nothing to do.".format(STAGING_DO_NAME)
+        sys.exit(0)
+    print 'Destroying {0} in 5 seconds. Ctrl+C if you want to stop this.'.format(STAGING_DO_NAME)
+    time.sleep(5)
+    staging.destroy()
+    print 'Destruct requested for {0}, done here.'.format(STAGING_DO_NAME)
+
+def _setup_ocean_get_token():
+    try:
+        import digitalocean
+    except ImportError:
+        print "You don't have the Digital Ocean API python bindings installed."
+        print 'pip install python-digitalocean'
+        print '.. in a virtualenv or in your root python setup (it only requires requests at time of writing)'
+        print 'Then try again.'
+        sys.exit(1)
+
+    token = os.getenv('DOTOKEN')
+    if not token:
+        print 'Put your DO token in your shell env.'
+        print 'E.g. keep "export DOTOKEN=thetoken" in <reporoot>/.dotoken.sh and do ". .dotoken.sh" before running Fabric'
+        sys.exit(1)
+    return token, digitalocean
+
+def _find_staging_server(do_name):
+    token, digitalocean = _setup_ocean_get_token()
+    manager = digitalocean.Manager(token=token)
+    droplets = manager.get_all_droplets()
+    for d in droplets:
+        if d.name == do_name:
+            return d
+    return None
+
+def _create_staging_server(do_name):
+    token, digitalocean = _setup_ocean_get_token()
+    manager = digitalocean.Manager(token=token)
+    droplet = digitalocean.Droplet(
+       token=token,
+       name=do_name,
+       region='lon1',
+       image='11434212',  # basic-server-15-Apr-2015-2GB
+       size_slug='2gb',  # 2GB ram, 2 VCPUs, 40GB SSD
+       backups=False,
+       private_networking=True
+    )
+    droplet.create()
+    
+    while droplet.status != 'active':
+        print 'Waiting for staging droplet to become active. Current status {0}, droplet id {1}'.format(droplet.status, droplet.id)
+        time.sleep(5)
+        droplet = manager.get_droplet(droplet.id)
+
+    print 'Staging droplet created, public IP {0}'.format(droplet.ip_address)
+    return droplet.ip_address
+
+def _setup_staging_server():
+    run('echo "test" > ~/check.txt')
