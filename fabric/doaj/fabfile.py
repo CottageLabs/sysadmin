@@ -2,40 +2,8 @@ import sys
 from fabric.api import env, run, sudo, cd, abort, roles, execute, warn_only
 
 env.use_ssh_config = True  # username, identity file (key), hostnames for machines will all be loaded from ~/.ssh/config
-# This means that you run this script like this:
+# You can run this script like this:
 # fab -H <host1,host2> <task_name>
-
-# E.g.:
-# Update DOAJ app to HEAD of current git master:
-# fab update_doaj
-# This will update it on all servers specified later in this file
-# (the 2 application servers and the gateway for now).
-
-# If you want to specify which hosts to update it on:
-# fab -H doaj,cl2,doajgate update_doaj
-    # (replace ssh names with the ones you would use yourself on the command
-    # line with ssh - they come from your own ~/.ssh/config)
-    # You can also use IP addresses, of course.
-
-# Switch DOAJ from running on one server to another.
-# fab switch_doaj:from_=cl2,to_=doaj
-# This would cause the DOAJ Gateway to direct traffic to the DOAJ server
-# and away from CL2, the OAG server.
-# Obviously, make sure the application config is actually the way you want it on both servers. You will be asked about all the important bits.
-
-    # WARNING: If git pull pulls any changes to python code (including
-    # configuration!), or if YOU change the app config, make sure to
-    # reload the application by sending a HUP signal to the gunicorn 
-    # master process before the final step of this task!
-    
-    # On the DOAJ machine, this happens just by doing
-    # kill -HUP $(sudo supervisorctl pid doaj)
-
-    # On the OAG machine, do ps -ef | grep gunicorn and look for the one
-    # that says "gunicorn: master [portality.app:app]", get its PID, and
-    # just do kill -HUP <the PID you got> 
-    # Then send me a passive aggressive reminder email to upgrade
-    # supervisord on that server.
 
 # your local ssh config does not apply when the script is explicitly specifying which hosts to run tasks on...
 # so username and key path will still have to be set here, or specified on the command line using -u <username> and -i <path to key>
@@ -65,8 +33,6 @@ env.hosts = [DOAJGATE_IP]
 
 DOAJ_PROD_PATH_SRC = '/home/cloo/repl/apps/doaj/src/doaj'
 DOAJ_TEST_PATH_SRC = '/home/cloo/repl/test/doaj/src/doaj'
-DOAJ_APP_PORT = 5550  # servers can access the application directly at 5550, the normal port is 5050
-                      # access to 5550 is restricted to the server IP-s by the firewall however
 DOAJ_USER_APP_PORT = 5050
 
 # Gateway server - nginx site config filename bits (also includes the server name in the middle)
