@@ -120,11 +120,6 @@ def update_staging(branch='production'):
 def reload_staging():
     execute(reload_webserver, supervisor_doaj_task_name='doaj-staging', hosts=env.roledefs['staging'])
 
-@roles('gate')
-def update_test(dev_branch="develop"):
-    '''Update DOAJ on the gate and test server. Optionally takes dev_branch=<name> arg, default "develop".'''
-    update_doaj(branch=dev_branch, doajdir=DOAJ_TEST_PATH_SRC)
-
 def _get_hosts(from_, to_):
     FROM = from_.upper()
     TO = to_.upper()
@@ -185,5 +180,5 @@ def deploy_live(branch='production', tag=""):
 
 @roles('gate')
 def deploy_test(branch='develop', tag=""):
-    update_test(branch=branch, tag=tag)
+    update_doaj(branch=branch, tag=tag, doajdir=DOAJ_TEST_PATH_SRC)
     execute(reload_webserver(supervisor_doaj_task_name='doaj-test'), hosts=env.roledefs['test'])
