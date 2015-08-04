@@ -55,12 +55,15 @@ env.roledefs.update(
 )
 
 @roles('gate')
-def update_doaj(branch='production', tag="", doajdir=DOAJ_PROD_PATH_SRC):
-    if not tag and branch == 'production':
+def update_doaj(env, branch='production', tag="", doajdir=DOAJ_PROD_PATH_SRC):
+    if not tag and env == 'production':
         print 'Please specify a tag to deploy to production'
         sys.exit(1)
 
-    if doajdir == DOAJ_PROD_PATH_SRC and branch != 'production':
+    if  (
+            (doajdir == DOAJ_PROD_PATH_SRC and branch != 'production')
+            or (env == 'production' and branch != 'production')
+        ):
         print 'You\'re deploying something other than the production branch to the live DOAJ app location.'
         print 'Aborting execution. If you really want to do this edit this script and comment the guard out.'
         sys.exit(1)
@@ -76,12 +79,12 @@ def update_doaj(branch='production', tag="", doajdir=DOAJ_PROD_PATH_SRC):
         if tag:
             run('git checkout {0}'.format(tag))
         run('git submodule update --init', pty=False)
-        run('deploy/{0}_doaj_deploy-gateway.sh'.format(branch))
+        run('deploy/deploy-gateway.sh {0}'.format(env))
 
 @roles('staging')
 def update_staging(branch='production'):
     '''Update the staging server with the latest live code and reload the app.'''
-    execute(update_doaj, branch=branch, hosts=env.roledefs['staging'])
+    execute(update_doaj, env='staging', branch=branch, hosts=env.roledefs['staging'])
     execute(reload_staging)
 
 @roles('staging')
@@ -143,12 +146,12 @@ def reload_webserver(supervisor_doaj_task_name='doaj-production'):
 
 @roles('gate')
 def deploy_live(branch='production', tag=""):
-    update_doaj(branch=branch, tag=tag)
+    update_doaj(env='production', branch=branch, tag=tag)
     execute(reload_webserver, hosts=env.roledefs['app'])
 
 @roles('gate')
 def deploy_test(branch='develop', tag=""):
-    update_doaj(branch=branch, tag=tag, doajdir=DOAJ_TEST_PATH_SRC)
+    update_doaj(env='test', branch=branch, tag=tag, doajdir=DOAJ_TEST_PATH_SRC)
     execute(reload_webserver(supervisor_doaj_task_name='doaj-test'), hosts=env.roledefs['test'])
 
 @roles('gate')
