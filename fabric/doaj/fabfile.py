@@ -33,7 +33,7 @@ STAGING_DO_NAME = 'doaj-staging'
 
 env.hosts = [DOAJGATE_IP]
 
-DOAJ_PROD_PATH_SRC = '/home/cloo/repl/apps/doaj/src/doaj'
+DOAJ_PROD_PATH_SRC = '/home/cloo/repl/production/doaj/src/doaj'
 DOAJ_TEST_PATH_SRC = '/home/cloo/repl/test/doaj/src/doaj'
 DOAJ_USER_APP_PORT = 5050
 
