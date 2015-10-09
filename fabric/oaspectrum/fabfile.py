@@ -62,10 +62,6 @@ def deploy_live(tag, branch='master'):
 
 @roles('app')
 def update_app(env, branch='master', tag=''):
-    if not tag and env == 'production':
-        print 'Please specify a tag to deploy to production'
-        sys.exit(1)
-
 
     if env == 'test':
         app_dir = TEST_APP_PATH_SRC
