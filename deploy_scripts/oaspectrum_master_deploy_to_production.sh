@@ -5,7 +5,6 @@ cd /opt/oaspectrum
 cd src/oaspectrum
 git checkout master
 git pull
-git checkout $(git describe --abbrev=0 --tags)  # get latest tag on master
 git submodule update --init
 
 cd esprit
