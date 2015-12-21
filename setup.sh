@@ -97,7 +97,7 @@ pip install requests
 
 # get latest version of supervisor via pip
 pip install supervisor
-curl -s https://raw.githubusercontent.com/Supervisor/initscripts/eb55c1a15d186b6c356ca29b6e08c9de0fe16a7e/ubuntu > ~/supervisord
+curl -s https://raw.githubusercontent.com/Supervisor/initscripts/178ccca96b2c951f400dd6cb778e899422f8e552/ubuntu > ~/supervisord
 mv ~/supervisord /etc/init.d/supervisord
 chmod a+x /etc/init.d/supervisord
 /usr/sbin/service supervisord stop
