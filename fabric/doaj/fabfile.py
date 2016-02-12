@@ -22,7 +22,9 @@ env.key_filename.extend(
 
 
 DOAJGATE_IP = '46.101.12.197'
+DOAJ_HARVESTER_GATE_IP = '178.62.117.182'
 DOAJAPP1_IP = '46.101.38.194'
+DOAJ_HARVESTER_APP1_IP = '178.62.121.225'
 DOAJ_TEST_IP = '178.62.92.200'
 DOAJ_STAGING_IP = '95.85.48.213'
 APP_SERVER_NAMES = {'DOAJGATE': DOAJGATE_IP}  # the gateway nginx config files are named after which app server the gateway directs traffic to
@@ -34,6 +36,7 @@ STAGING_DO_NAME = 'doaj-staging'
 env.hosts = [DOAJGATE_IP]
 
 DOAJ_PROD_PATH_SRC = '/home/cloo/repl/production/doaj/src/doaj'
+DOAJ_HARVESTER_PATH_SRC = '/home/cloo/repl/harvester/doaj/src/doaj'
 DOAJ_TEST_PATH_SRC = '/home/cloo/repl/test/doaj/src/doaj'
 DOAJ_USER_APP_PORT = 5050
 
@@ -50,21 +53,25 @@ env.roledefs.update(
             'app': [DOAJAPP1_IP],
             'gate': [DOAJGATE_IP],
             'test': [DOAJ_TEST_IP],
-            'staging': [DOAJ_STAGING_IP]
+            'staging': [DOAJ_STAGING_IP],
+            'harvester-app': [DOAJ_HARVESTER_APP1_IP],
+            'harvester-gate': [DOAJ_HARVESTER_GATE_IP],
         }
 )
 
 @roles('gate')
 def update_doaj(env, branch='production', tag="", doajdir=DOAJ_PROD_PATH_SRC):
-    if not tag and env == 'production':
-        print 'Please specify a tag to deploy to production'
+    if (not tag and env == 'production') or (not tag and env == 'harvester'):
+        print 'Please specify a tag to deploy to production or harvester'
         sys.exit(1)
 
     if  (
             (doajdir == DOAJ_PROD_PATH_SRC and branch != 'production')
+            or (doajdir == DOAJ_HARVESTER_PATH_SRC and branch != 'production')
             or (env == 'production' and branch != 'production')
+            or (env == 'harvester' and branch != 'production')
         ):
-        print 'You\'re deploying something other than the production branch to the live DOAJ app location.'
+        print 'You\'re deploying something other than the production branch to the live or harvester DOAJ app location.'
         print 'Aborting execution. If you really want to do this edit this script and comment the guard out.'
         sys.exit(1)
 
@@ -148,6 +155,11 @@ def reload_webserver(supervisor_doaj_task_name='doaj-production'):
 def deploy_live(branch='production', tag=""):
     update_doaj(env='production', branch=branch, tag=tag)
     execute(reload_webserver, hosts=env.roledefs['app'])
+
+@roles('harvester-gate')
+def deploy_harvester(branch='production', tag=""):
+    execute(update_doaj, env='harvester', branch=branch, tag=tag, doajdir=DOAJ_HARVESTER_PATH_SRC, hosts=env.roledefs['harvester-gate'])
+    execute(reload_webserver, supervisor_doaj_task_name='doaj-harvester', hosts=env.roledefs['harvester-app'])
 
 @roles('gate')
 def deploy_test(branch='develop', tag=""):
