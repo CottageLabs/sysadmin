@@ -88,6 +88,13 @@ def update_doaj(env, branch='production', tag="", doajdir=DOAJ_PROD_PATH_SRC):
         run('git submodule update --init', pty=False)
         run('deploy/deploy-gateway.sh {0}'.format(env))
 
+
+@roles('gate')
+def restart(env, doajdir=DOAJ_PROD_PATH_SRC):
+    with cd(doajdir):
+        run('deploy/restart.sh {0}'.format(env))
+
+
 @roles('staging')
 def update_staging(branch='production'):
     '''Update the staging server with the latest live code and reload the app.'''
@@ -154,7 +161,10 @@ def reload_webserver(supervisor_doaj_task_name='doaj-production'):
 @roles('gate')
 def deploy_live(branch='production', tag=""):
     update_doaj(env='production', branch=branch, tag=tag)
-    execute(reload_webserver, hosts=env.roledefs['app'])
+
+@roles('gate')
+def restart_live():
+    restart(env='production')
 
 @roles('harvester-gate')
 def deploy_harvester(branch='production', tag=""):
