@@ -176,6 +176,11 @@ def deploy_test(branch='develop', tag=""):
     update_doaj(env='test', branch=branch, tag=tag, doajdir=DOAJ_TEST_PATH_SRC)
     execute(reload_webserver(supervisor_doaj_task_name='doaj-test'), hosts=env.roledefs['test'])
 
+
+@roles('gate')
+def restart_test():
+    restart(env='test', doajdir=DOAJ_TEST_PATH_SRC)
+
 @roles('gate')
 def create_staging(tag):
     if _find_staging_server(STAGING_DO_NAME):
