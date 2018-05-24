@@ -174,7 +174,7 @@ def deploy_harvester(branch='production', tag=""):
 @roles('gate')
 def deploy_test(branch='develop', tag=""):
     update_doaj(env='test', branch=branch, tag=tag, doajdir=DOAJ_TEST_PATH_SRC)
-    execute(reload_webserver(supervisor_doaj_task_name='doaj-test'), hosts=env.roledefs['test'])
+    execute(restart_test(supervisor_doaj_task_name='doaj-test'), hosts=env.roledefs['test'])
 
 
 @roles('gate')
