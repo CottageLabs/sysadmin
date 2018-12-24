@@ -78,9 +78,9 @@ def update_doaj(env, branch='production', tag="", doajdir=DOAJ_PROD_PATH_SRC):
     with cd(doajdir):
         run('git config user.email "us@cottagelabs.com"')
         run('git config user.name "Cottage Labs LLP"')
-        run('git checkout master')  # so that we have a branch we can definitely pull in
+        #run('git checkout master')  # so that we have a branch we can definitely pull in
                                     # (in case we start from one that was set up for pushing only)
-        run('git pull', pty=False)  # get any new branches
+        #run('git pull', pty=False)  # get any new branches
         run('git checkout ' + branch)
         run('git pull', pty=False)  # again, in case the checkout actually switched the branch, pull from the remote now
         if tag:
