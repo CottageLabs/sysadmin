@@ -1,0 +1,24 @@
+---
+- hosts: all:!test
+  tasks:
+    - name: Ping all production hosts to check we're fully up and running
+      ping:
+
+- hosts: app
+  tasks:
+# supervisord module does not support all
+#    - name: restart all supervisor services
+#      supervisorctl:
+#        name: all
+#        state: restarted
+#      become: yes
+
+    - name: restart all supervisor services
+      command: supervisorctl restart all
+      become: yes
+
+    - name: Restart nginx
+      service:
+        name: nginx
+        state: restarted
+      become: yes

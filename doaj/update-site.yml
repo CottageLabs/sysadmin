@@ -1,0 +1,20 @@
+---
+- hosts: all:!test
+  tasks:
+    - name: Ping all production hosts to check we're fully up and running
+      ping:
+
+- hosts: app
+  tasks:
+    - name: Pull latest master from doaj GitHub
+      git:
+        repo: https://github.com/DOAJ/doaj.git
+        dest: /home/cloo/doaj/src/doaj
+        version: master
+        update: yes
+        clone: no
+      register: code_updated
+
+    - name: Run the service deploy script if there were code changes
+      shell: /home/cloo/doaj/src/doaj/deploy/deploy.sh production
+      when: code_updated.changed
