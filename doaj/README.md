@@ -8,4 +8,4 @@ You'll need to have ansible installed. Tested on version 2.7.0
 
 * Restart the service
 
-	todo
+	ansible-playbook -i doaj-hosts.ini update-site.yml
