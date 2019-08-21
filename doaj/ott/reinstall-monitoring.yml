@@ -1,0 +1,10 @@
+---
+- hosts: all:!test
+  tasks:
+    - name: Ping all production hosts to check we're fully up and running
+      ping:
+
+- hosts: all:!test
+  become: yes
+  roles:
+    - andrewsomething.do-agent
