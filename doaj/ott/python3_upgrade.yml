@@ -1,0 +1,40 @@
+---
+- hosts: test
+  tasks:
+    - name: Ping test machine to check we're fully up and running
+      ping:
+
+- hosts: test
+  tasks:
+    - name: Install Python 3.7 from apt
+      become: yes
+      apt:
+        name: python3.7
+        update_cache: yes
+
+    - name: Create a new python3 virtualenv
+      command: virtualenv /home/cloo/doaj_python3 -p python3.7 creates="/home/cloo/doaj_python3"
+
+    - name: Clone the app to src/doaj directory in the virtualenv
+      git:
+        repo: https://github.com/DOAJ/doaj.git
+        dest: /home/cloo/doaj_python3/src/doaj
+        version: feature/python3_edges_bs3_xml
+        update: yes
+        clone: yes
+
+    - name: Symlink the supervisor configuration files
+      become: yes
+      file:
+        src: '/home/cloo/doaj_python3/src/doaj/deploy/supervisor/test/{{ item }}'
+        path: '/etc/supervisor/conf.d/{{ item }}'
+        state: link
+        force: yes
+        follow: no
+      with_items:
+        - doaj.conf
+        - huey-long-running.conf
+        - huey-main.conf
+
+    - name: Run the app deploy script
+      shell: /home/cloo/doaj_python3/src/doaj/deploy/deploy.sh test
