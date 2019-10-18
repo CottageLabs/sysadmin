@@ -1,0 +1,39 @@
+---
+- hosts: test
+  tasks:
+    - name: Ping test machine to check we're fully up and running
+      ping:
+
+- hosts: test
+  tasks:
+    - name: Delete the old python 2 virtualenv and source code
+      file:
+        path: /home/cloo/doaj
+        state: absent
+
+    - name: Create a new python3 virtualenv
+      command: virtualenv /home/cloo/doaj -p python3.7 creates="/home/cloo/doaj"
+
+    - name: Clone the app to src/doaj directory in the virtualenv
+      git:
+        repo: https://github.com/DOAJ/doaj.git
+        dest: /home/cloo/doaj/src/doaj
+        version: feature/python3_edges_bs3_xml
+        update: yes
+        clone: yes
+
+    - name: Symlink the supervisor configuration files
+      become: yes
+      file:
+        src: '/home/cloo/doaj/src/doaj/deploy/supervisor/test/{{ item }}'
+        path: '/etc/supervisor/conf.d/{{ item }}'
+        state: link
+        force: yes
+        follow: no
+      with_items:
+        - doaj.conf
+        - huey-long-running.conf
+        - huey-main.conf
+
+    - name: Run the app deploy script
+      shell: /home/cloo/doaj/src/doaj/deploy/deploy.sh test

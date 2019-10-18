@@ -1,0 +1,31 @@
+---
+- hosts: test
+  tasks:
+    - name: Ping test machine to check we're fully up and running
+      ping:
+
+- hosts: test
+  tasks:
+    - name: Clone the app develop branch to src/doaj directory in the old python 2 virtualenv
+      git:
+        repo: https://github.com/DOAJ/doaj.git
+        dest: /home/cloo/doaj/src/doaj
+        version: develop
+        update: yes
+        clone: no
+
+    - name: Symlink the supervisor configuration files
+      become: yes
+      file:
+        src: '/home/cloo/doaj/src/doaj/deploy/supervisor/test/{{ item }}'
+        path: '/etc/supervisor/conf.d/{{ item }}'
+        state: link
+        force: yes
+        follow: no
+      with_items:
+        - doaj.conf
+        - huey-long-running.conf
+        - huey-main.conf
+
+    - name: Run the app deploy script
+      shell: /home/cloo/doaj/src/doaj/deploy/deploy.sh test
