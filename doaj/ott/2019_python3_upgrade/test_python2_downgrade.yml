@@ -30,7 +30,7 @@
     - name: Symlink the nginx configuration file for DOAJ
       become: yes
       file:
-        src: /home/cloo/doaj/src/doaj/deploy/nginx/doaj
+        src: /home/cloo/doaj/src/doaj/deploy/nginx/doaj-test
         path: /etc/nginx/sites-enabled/doaj
         state: link
         force: yes
