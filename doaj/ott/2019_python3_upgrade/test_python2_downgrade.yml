@@ -27,5 +27,14 @@
         - huey-long-running.conf
         - huey-main.conf
 
+    - name: Symlink the nginx configuration file for DOAJ
+      become: yes
+      file:
+        src: /home/cloo/doaj/src/doaj/deploy/nginx/doaj
+        path: /etc/nginx/sites-enabled/doaj
+        state: link
+        force: yes
+        follow: no
+
     - name: Run the app deploy script
       shell: /home/cloo/doaj/src/doaj/deploy/deploy.sh test
