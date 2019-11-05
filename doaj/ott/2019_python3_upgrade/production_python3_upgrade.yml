@@ -1,0 +1,60 @@
+---
+- hosts: all:!test
+  tasks:
+    - name: Ping all production hosts to check we're fully up and running
+      ping:
+
+- hosts: app
+  tasks:
+    - name: Install Python 3.7 from apt
+      become: yes
+      apt:
+        name: python3.7
+        update_cache: yes
+
+    - name: Create a new python3 virtualenv
+      command: virtualenv /home/cloo/doaj_python3 -p python3.7 creates="/home/cloo/doaj_python3"
+
+    - name: Clone the app to src/doaj directory in the virtualenv
+      git:
+        repo: https://github.com/DOAJ/doaj.git
+        dest: /home/cloo/doaj_python3/src/doaj
+        version: master
+        update: yes
+        clone: yes
+
+    - name: Symlink the supervisor configuration file for the DOAJ app
+      become: yes
+      file:
+        src: '/home/cloo/doaj_python3/src/doaj/deploy/supervisor/production/doaj.conf'
+        path: '/etc/supervisor/conf.d/doaj.conf'
+        state: link
+        force: yes
+        follow: no
+
+    - name: Symlink the nginx configuration file for DOAJ
+      become: yes
+      file:
+        src: /home/cloo/doaj_python3/src/doaj/deploy/nginx/doaj
+        path: /etc/nginx/sites-enabled/doaj
+        state: link
+        force: yes
+        follow: no
+
+- hosts: doaj-bg-app-1
+  tasks:
+    - name: Symlink the huey supervisor configuration files on the background server
+      become: yes
+      file:
+        src: '/home/cloo/doaj_python3/src/doaj/deploy/supervisor/production-background/{{ item }}'
+        path: '/etc/supervisor/conf.d/{{ item }}'
+        state: link
+        force: yes
+        follow: no
+      with_items:
+        - huey-long-running.conf
+        - huey-main.conf
+
+- hosts: app
+    - name: Run the app deploy script
+      shell: /home/cloo/doaj_python3/src/doaj/deploy/deploy.sh production

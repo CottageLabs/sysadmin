@@ -1,10 +1,10 @@
 ---
-- hosts: test
+- hosts: all:!test
   tasks:
-    - name: Ping test machine to check we're fully up and running
+    - name: Ping all production hosts to check we're fully up and running
       ping:
 
-- hosts: test
+- hosts: app
   tasks:
     - name: Delete the old python 2 virtualenv and source code
       file:
@@ -18,34 +18,45 @@
       git:
         repo: https://github.com/DOAJ/doaj.git
         dest: /home/cloo/doaj/src/doaj
-        version: feature/python3_edges_bs3_xml
+        version: master
         update: yes
         clone: yes
 
-    - name: Symlink the supervisor configuration files
+    - name: Symlink the supervisor configuration file for the DOAJ app
       become: yes
       file:
-        src: '/home/cloo/doaj/src/doaj/deploy/supervisor/test/{{ item }}'
-        path: '/etc/supervisor/conf.d/{{ item }}'
+        src: '/home/cloo/doaj/src/doaj/deploy/supervisor/production/doaj.conf'
+        path: '/etc/supervisor/conf.d/doaj.conf'
         state: link
         force: yes
         follow: no
-      with_items:
-        - doaj.conf
-        - huey-long-running.conf
-        - huey-main.conf
 
     - name: Symlink the nginx configuration file for DOAJ
       become: yes
       file:
-        src: /home/cloo/doaj/src/doaj/deploy/nginx/doaj-test
+        src: /home/cloo/doaj/src/doaj/deploy/nginx/doaj
         path: /etc/nginx/sites-enabled/doaj
         state: link
         force: yes
         follow: no
 
+- hosts: doaj-bg-app-1
+  tasks:
+    - name: Symlink the huey supervisor configuration files on the background server
+      become: yes
+      file:
+        src: '/home/cloo/doaj/src/doaj/deploy/supervisor/production-background/{{ item }}'
+        path: '/etc/supervisor/conf.d/{{ item }}'
+        state: link
+        force: yes
+        follow: no
+      with_items:
+        - huey-long-running.conf
+        - huey-main.conf
+
+- hosts: app
     - name: Run the app deploy script
-      shell: /home/cloo/doaj/src/doaj/deploy/deploy.sh test
+      shell: /home/cloo/doaj/src/doaj/deploy/deploy.sh production
 
     - name: Delete the old duplicate python3 virtualenv and source code
       file:
