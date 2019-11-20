@@ -10,7 +10,7 @@
       git:
         repo: https://github.com/DOAJ/doaj.git
         dest: /home/cloo/doaj/src/doaj
-        version: develop
+        version: python2
         update: yes
         clone: no
 

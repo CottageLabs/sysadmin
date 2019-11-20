@@ -56,5 +56,6 @@
         - huey-main.conf
 
 - hosts: app
+  tasks:
     - name: Run the app deploy script
       shell: /home/cloo/doaj_python3/src/doaj/deploy/deploy.sh production
