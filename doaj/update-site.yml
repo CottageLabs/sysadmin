@@ -4,7 +4,7 @@
     - name: Ping all production hosts to check we're fully up and running
       ping:
 
-- hosts: app
+- hosts: app:harvester
   tasks:
     - name: Pull latest master from doaj GitHub
       git:
@@ -15,6 +15,14 @@
         clone: no
       register: code_updated
 
+- hosts: app
+  tasks:
     - name: Run the service deploy script if there were code changes
       shell: /home/cloo/doaj/src/doaj/deploy/deploy.sh production
+      when: code_updated.changed
+
+- hosts: harvester
+  tasks:
+    - name: Install the app and get the updated config on harvester machine if there were code changes                           
+      shell: /home/cloo/doaj/src/doaj/deploy/deploy.sh harvester
       when: code_updated.changed

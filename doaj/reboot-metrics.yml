@@ -4,7 +4,7 @@
     - name: Ping all production hosts to check we're fully up and running
       ping:
 
-- hosts: all:!test
+- hosts: all:!test:!harvester
   tasks:
     - name: Reboot metricbeat on all production servers
       systemd:

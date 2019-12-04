@@ -8,3 +8,8 @@
   tasks:
     - name: Run the service deploy script to get the config then restart
       shell: /home/cloo/doaj/src/doaj/deploy/deploy.sh production
+
+- hosts: harvester
+  tasks:
+    - name: Get the latest harvester config
+      shell: /home/cloo/doaj/src/doaj/deploy/deploy.sh harvester
