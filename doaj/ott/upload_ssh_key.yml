@@ -1,0 +1,9 @@
+---
+
+- hosts: all
+  tasks:
+    - name: Upload SSH public key 'cl.pub' to DOAJ machines
+      authorized_key:
+        user: cloo
+        state: present
+        key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/cl.pub') }}"
