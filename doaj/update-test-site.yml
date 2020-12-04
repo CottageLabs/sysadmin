@@ -1,0 +1,18 @@
+---
+- hosts: test
+  tasks:
+    - name: Ping test host to check we're fully up and running
+      ping:
+
+    - name: Pull latest develop from doaj GitHub
+      git:
+        repo: https://github.com/DOAJ/doaj.git
+        dest: /home/cloo/doaj/src/doaj
+        version: develop
+        update: yes
+        clone: no
+      register: code_updated
+
+    - name: Run the service deploy script if there were code changes
+      shell: /home/cloo/doaj/src/doaj/deploy/deploy.sh test
+      when: code_updated.changed
