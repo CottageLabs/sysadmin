@@ -13,6 +13,7 @@
         version: master
         update: yes
         clone: no
+        force: no
       register: code_updated
 
 - hosts: app
