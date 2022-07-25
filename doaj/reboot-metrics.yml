@@ -10,12 +10,12 @@
       systemd:
         state: restarted
         name: metricbeat
-      become: yes 
+      become: yes
 
-- hosts: doaj-new-app-1
+- hosts: doaj-public-app-1
   tasks:
     - name: Reboot filebeat on the primary app server
       systemd:
         state: restarted
         name: filebeat
-      become: yes 
+      become: yes
