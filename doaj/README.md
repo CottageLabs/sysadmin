@@ -28,3 +28,9 @@ These are in the directory ott
 
         ansible-galaxy install andrewsomething.do-agent
         ansible-playbook -i doaj-hosts.ini ott/reinstall-monitoring.yml
+
+* Upload a new SSH access key to all of our hosts
+  set the path for file lookup in the yml file to its path on your local machine.
+  todo: can we read this from CLI?
+
+        ansible-playbook -i doaj-hosts.ini ott/upload_ssh_key.yml
