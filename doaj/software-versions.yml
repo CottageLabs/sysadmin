@@ -1,0 +1,125 @@
+---
+- name: Get software versions
+  hosts: monitor # replace with your target group or server(s)
+  tasks:
+    - name: Get Ubuntu version
+      command: lsb_release -d
+      register: ubuntu_version
+      changed_when: false
+      ignore_errors: true
+      when: "'ubuntu' in ansible_distribution|lower"
+
+    - name: Get Python version
+      command: python3 --version
+      register: python_version
+      changed_when: false
+      ignore_errors: true
+
+    - name: Get Elasticsearch version
+      uri:
+        url: http://10.131.191.132:9200/
+        method: GET
+        return_content: yes
+      register: elasticsearch_version
+      changed_when: false
+      ignore_errors: true
+      tags:
+        - get_es_version
+
+    - name: Get Kibana version
+      uri:
+        url: "http://localhost:5601/api/status"
+        method: GET
+        return_content: yes
+        headers:
+          kbn-xsrf: "true"
+      register: kibana_version
+      run_once: true
+      changed_when: false
+      ignore_errors: true
+
+    - name: Get Logstash version
+      command: /usr/share/logstash/bin/logstash --version
+      register: logstash_version
+      changed_when: false
+      ignore_errors: true
+
+    - name: Get Metricbeat version
+      command: metricbeat version
+      register: metricbeat_version
+      changed_when: false
+      ignore_errors: true
+
+    - name: Get Redis version
+      command: redis-server --version
+      register: redis_version
+      changed_when: false
+      ignore_errors: true
+
+    - name: Get Kafka version
+      shell: ls /opt/kafka/libs | grep kafka-
+      register: kafka_version
+      changed_when: false
+      ignore_errors: true
+      tags:
+        - get_kafka_version
+
+    - name: Get nginx version
+      command: nginx -v
+      register: nginx_version
+      changed_when: false
+      ignore_errors: true
+
+    # Note: "Debian ISO lists" isn't software, it's a list of ISOs. Assuming you meant Debian OS version.
+    - name: Get Debian version
+      slurp:
+        src: /etc/debian_version
+      register: debian_version
+      changed_when: false
+      ignore_errors: true
+      tags:
+        - get_debian_version
+
+    - name: Get ansible version
+      command:
+        cmd: ansible --version | head -n 1
+      register: ansible_version
+      changed_when: false
+      ignore_errors: true
+
+    - name: Get LibXML version
+      command:
+        cmd: xml2-config --version
+      register: libxml_version
+      changed_when: false
+      ignore_errors: true
+      tags:
+        - get_libxml_version
+
+    - name: Get Java version
+      command: java -version
+      register: java_version
+      changed_when: false
+      ignore_errors: true
+      args:
+        warn: no
+
+    - name: Display gathered versions
+      debug:
+        msg:
+          - "Ubuntu Version: {{ ubuntu_version.stdout if (ubuntu_version is defined and 'stdout' in ubuntu_version) else 'N/A' }}"
+          - "Python Version: {{ python_version.stdout if (python_version is defined and 'stdout' in python_version) else 'N/A' }}"
+          - "Elasticsearch Version: {{ elasticsearch_version.json.version.number if (elasticsearch_version is defined and 'json' in elasticsearch_version) else 'N/A' }}"
+          - "Kibana Version: {{ kibana_version.json.version.number if (kibana_version is defined and 'json' in kibana_version) else 'N/A' }}"
+          - "Logstash Version: {{ logstash_version.stdout if (logstash_version is defined and 'stdout' in logstash_version) else 'N/A' }}"
+          - "Metricbeat Version: {{ metricbeat_version.stdout if (metricbeat_version is defined and 'stdout' in metricbeat_version) else 'N/A' }}"
+          - "Redis Version: {{ redis_version.stdout if (redis_version is defined and 'stdout' in redis_version) else 'N/A' }}"
+          - "Kafka Version: {{ kafka_version.stdout if (kafka_version is defined and 'stdout' in kafka_version) else 'N/A' }}"
+          - "nginx Version: {{ nginx_version.stderr if (nginx_version is defined and 'stdout' in nginx_version) else 'N/A' }}" # Note: nginx -v writes version to stderr
+          - "Debian Version: {{ (debian_version['content'] | b64decode).strip() if (debian_version is defined) else 'N/A' }}"
+          - "Ansible Version: {{ ansible_version.stdout if (ansible_version is defined and 'stdout' in ansible_version) else 'N/A' }}" # Extract the version number
+          - "Ansible Version currently used: {{ ansible_version.full }}"
+          - "LibXML Version: {{ libxml_version.stdout if (libxml_version is defined and 'stdout' in libxml_version) else 'N/A' }}"
+          - "Java Version: {{ java_version.stderr if (java_version is defined and 'stdout' in java_version) else 'N/A' }}" # Note: java -version writes version to stderr
+      tags:
+        - output
