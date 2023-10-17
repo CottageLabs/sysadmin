@@ -1,6 +1,6 @@
 ---
 - name: Get software versions
-  hosts: monitor # replace with your target group or server(s)
+  hosts: all
   tasks:
     - name: Get Ubuntu version
       command: lsb_release -d
@@ -9,92 +9,21 @@
       ignore_errors: true
       when: "'ubuntu' in ansible_distribution|lower"
 
+    - name: Set Ubuntu version message
+      set_fact:
+        ubuntu_msg: "Ubuntu Version: {{ ubuntu_version.stdout }}"
+      when: ubuntu_version is defined and 'stdout' in ubuntu_version
+
     - name: Get Python version
       command: python3 --version
       register: python_version
       changed_when: false
       ignore_errors: true
 
-    - name: Get Elasticsearch version
-      uri:
-        url: http://10.131.191.132:9200/
-        method: GET
-        return_content: yes
-      register: elasticsearch_version
-      changed_when: false
-      ignore_errors: true
-      tags:
-        - get_es_version
-
-    - name: Get Kibana version
-      uri:
-        url: "http://localhost:5601/api/status"
-        method: GET
-        return_content: yes
-        headers:
-          kbn-xsrf: "true"
-      register: kibana_version
-      run_once: true
-      changed_when: false
-      ignore_errors: true
-
-    - name: Get Logstash version
-      command: /usr/share/logstash/bin/logstash --version
-      register: logstash_version
-      changed_when: false
-      ignore_errors: true
-
-    - name: Get Metricbeat version
-      command: metricbeat version
-      register: metricbeat_version
-      changed_when: false
-      ignore_errors: true
-
-    - name: Get Redis version
-      command: redis-server --version
-      register: redis_version
-      changed_when: false
-      ignore_errors: true
-
-    - name: Get Kafka version
-      shell: ls /opt/kafka/libs | grep kafka-
-      register: kafka_version
-      changed_when: false
-      ignore_errors: true
-      tags:
-        - get_kafka_version
-
-    - name: Get nginx version
-      command: nginx -v
-      register: nginx_version
-      changed_when: false
-      ignore_errors: true
-
-    # Note: "Debian ISO lists" isn't software, it's a list of ISOs. Assuming you meant Debian OS version.
-    - name: Get Debian version
-      slurp:
-        src: /etc/debian_version
-      register: debian_version
-      changed_when: false
-      ignore_errors: true
-      tags:
-        - get_debian_version
-
-    - name: Get ansible version
-      command:
-        cmd: ansible --version | head -n 1
-      register: ansible_version
-      changed_when: false
-      ignore_errors: true
-
-    - name: Get LibXML version
-      command:
-        cmd: xml2-config --version
-      register: libxml_version
-      changed_when: false
-      ignore_errors: true
-      tags:
-        - get_libxml_version
+    - name: Set Python version message
+      set_fact:
+        pyhon_msg: "Python Version: {{ python_version.stdout }}"
+      when: python_version is defined and 'stdout' in python_version
 
     - name: Get Java version
       command: java -version
@@ -104,22 +33,176 @@
       args:
         warn: no
 
+    - name: Set Java version message
+      set_fact:
+        java_msg: "Java Version: {{ java_version.stderr }}"
+      when: java_version is defined and 'stdout' in java_version
+
+    - name: Get Metricbeat version
+      command: metricbeat version
+      register: metricbeat_version
+      changed_when: false
+      ignore_errors: true
+
+    - name: Set Metricbeat version message
+      set_fact:
+        metricbeat_msg: "Metricbeat Version: {{ metricbeat_version.stdout }}"
+      when: metricbeat_version is defined and 'stdout' in metricbeat_version
+
+    - name: Get Elasticsearch version
+      uri:
+        url: http://10.131.191.132:9200/
+        method: GET
+        return_content: yes
+      when: "'index' in group_names"
+      register: elasticsearch_version
+      changed_when: false
+      ignore_errors: true
+      tags:
+        - get_es_version
+
+    - name: Set Elasticsearch version message
+      set_fact:
+        elasticsearch_msg: "Elasticsearch Version: {{ elasticsearch_version.json.version.number }}"
+      when: elasticsearch_version is defined and 'json' in elasticsearch_version
+
+    - name: Get Local Elasticsearch version
+      uri:
+        url: http://localhost:9200/
+        method: GET
+        return_content: yes
+      when: "'monitor' in group_names or 'test' in group_names"
+      register: local_elasticsearch_version
+      changed_when: false
+      ignore_errors: true
+      tags:
+        - get_es_version
+
+    - name: Set Local Elasticsearch version message
+      set_fact:
+        local_elasticsearch_msg: "Elasticsearch Version: {{ local_elasticsearch_version.json.version.number }}"
+      when: local_elasticsearch_version is defined and 'json' in local_elasticsearch_version
+
+    - name: Get Kibana version
+      uri:
+        url: "http://localhost:5601/api/status"
+        method: GET
+        return_content: yes
+        headers:
+          kbn-xsrf: "true"
+      when: "'monitor' in group_names"
+      register: kibana_version
+      changed_when: false
+      ignore_errors: true
+
+    - name: Set Kibana version message
+      set_fact:
+        kibana_msg: "Kibana Version: {{ kibana_version.json.version.number }}"
+      when: kibana_version is defined and 'json' in kibana_version
+
+    - name: Get Logstash version
+      command: /usr/share/logstash/bin/logstash --version
+      when: "'monitor' in group_names"
+      register: logstash_version
+      changed_when: false
+      ignore_errors: true
+
+    - name: Set Logstash version message
+      set_fact:
+        logstash_msg: "Logstash Version: {{ logstash_version.stdout }}"
+      when: logstash_version is defined and 'stdout' in logstash_version
+
+    - name: Get Redis version
+      command: redis-server --version
+      when: "'app' in group_names or 'test' in group_names"
+      register: redis_version
+      changed_when: false
+      ignore_errors: true
+
+    - name: Set Redis version message
+      set_fact:
+        redis_msg: "Redis Version: {{ redis_version.stdout }}"
+      when: redis_version is defined and 'stdout' in redis_version
+
+    - name: Get Kafka version
+      shell: ls /opt/kafka/libs | grep kafka-
+      when: "'kafka' in group_names"
+      register: kafka_version
+      changed_when: false
+      ignore_errors: true
+      tags:
+        - get_kafka_version
+
+    - name: Set Kafka version message
+      set_fact:
+        kafka_msg: "Kafka Version: {{ kafka_version.stdout }}"
+      when: kafka_version is defined and 'stdout' in kafka_version
+
+    - name: Get nginx version
+      command: nginx -v
+      when: "'index' not in group_names"
+      register: nginx_version
+      changed_when: false
+      ignore_errors: true
+
+    - name: Set Nginx version message
+      set_fact:
+        nginx_msg: "Nginx Version: {{ nginx_version.stderr }}"
+      when: nginx_version is defined and 'stdout' in nginx_version
+
+    - name: Set Ansible version message
+      set_fact:
+        ansible_msg: "Ansible Version: {{ ansible_version.full }}"
+      when: ansible_version is defined and 'stdout' in ansible_version
+
+    - name: Get LibXML version
+      command:
+        cmd: xml2-config --version
+      when: "'monitor' not in group_names"
+      register: libxml_version
+      changed_when: false
+      ignore_errors: true
+      tags:
+        - get_libxml_version
+
+    - name: Set Libxml version message
+      set_fact:
+        libxml_msg: "Libxml Version: {{ libxml_version.stdout }}"
+      when: libxml_version is defined and 'stdout' in libxml_version
+
+    - name: Collect all messages
+      set_fact:
+        messages: "{{ [ubuntu_msg|default(''), pyhon_msg|default(''), java_msg|default(''), metricbeat_msg|default(''), elasticsearch_msg|default(''),
+        local_elasticsearch_msg|default(''), kibana_msg|default(''), logstash_msg|default(''), redis_msg|default(''), kafka_msg|default(''),
+        nginx_msg|default(''), debian_iso_list_msg|default(''), ansible_msg|default(''), libxml_msg|default('')] | select('ne', '') | list }}"
+
     - name: Display gathered versions
       debug:
-        msg:
-          - "Ubuntu Version: {{ ubuntu_version.stdout if (ubuntu_version is defined and 'stdout' in ubuntu_version) else 'N/A' }}"
-          - "Python Version: {{ python_version.stdout if (python_version is defined and 'stdout' in python_version) else 'N/A' }}"
-          - "Elasticsearch Version: {{ elasticsearch_version.json.version.number if (elasticsearch_version is defined and 'json' in elasticsearch_version) else 'N/A' }}"
-          - "Kibana Version: {{ kibana_version.json.version.number if (kibana_version is defined and 'json' in kibana_version) else 'N/A' }}"
-          - "Logstash Version: {{ logstash_version.stdout if (logstash_version is defined and 'stdout' in logstash_version) else 'N/A' }}"
-          - "Metricbeat Version: {{ metricbeat_version.stdout if (metricbeat_version is defined and 'stdout' in metricbeat_version) else 'N/A' }}"
-          - "Redis Version: {{ redis_version.stdout if (redis_version is defined and 'stdout' in redis_version) else 'N/A' }}"
-          - "Kafka Version: {{ kafka_version.stdout if (kafka_version is defined and 'stdout' in kafka_version) else 'N/A' }}"
-          - "nginx Version: {{ nginx_version.stderr if (nginx_version is defined and 'stdout' in nginx_version) else 'N/A' }}" # Note: nginx -v writes version to stderr
-          - "Debian Version: {{ (debian_version['content'] | b64decode).strip() if (debian_version is defined) else 'N/A' }}"
-          - "Ansible Version: {{ ansible_version.stdout if (ansible_version is defined and 'stdout' in ansible_version) else 'N/A' }}" # Extract the version number
-          - "Ansible Version currently used: {{ ansible_version.full }}"
-          - "LibXML Version: {{ libxml_version.stdout if (libxml_version is defined and 'stdout' in libxml_version) else 'N/A' }}"
-          - "Java Version: {{ java_version.stderr if (java_version is defined and 'stdout' in java_version) else 'N/A' }}" # Note: java -version writes version to stderr
-      tags:
-        - output
+        msg: "{{ messages }}"
+
+- hosts: localhost
+  vars:
+    pycountry_dir: "{{ ansible_env.PWD }}/pycountry"
+  tasks:
+    - name: Clone the repository
+      git:
+        repo: 'https://github.com/DOAJ/pycountry.git'
+        dest: '{{ pycountry_dir }}'
+      register: git_result
+
+    - name: Read the content of the file
+      command: "cat {{ pycountry_dir }}/generate.py"
+      register: file_content
+
+    - name: Filter and display lines starting with specific text
+      set_fact:
+        debian_iso_list_version: "{{ file_content.stdout_lines | select('match', '^REVISION.*$') | list }}"
+
+    - name: Delete the cloned directory
+      file:
+        path: "{{ pycountry_dir }}"
+        state: absent
+
+    - name: Display version
+      debug:
+        var: debian_iso_list_version
