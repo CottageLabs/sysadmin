@@ -11,7 +11,7 @@
 
     - name: Set Ubuntu version message
       set_fact:
-        ubuntu_msg: "Ubuntu Version: {{ ubuntu_version.stdout }}"
+        ubuntu_msg: "Ubuntu Version: {{ ubuntu_version.stdout | regex_search('(?<=Ubuntu\\s).+') }}"
       when: ubuntu_version is defined and 'stdout' in ubuntu_version
 
     - name: Get Python version
@@ -26,16 +26,15 @@
       when: python_version is defined and 'stdout' in python_version
 
     - name: Get Java version
-      command: java -version
+      shell:
+        cmd: java -version 2>&1 | grep 'version'
+        warn: no
       register: java_version
       changed_when: false
-      ignore_errors: true
-      args:
-        warn: no
 
     - name: Set Java version message
       set_fact:
-        java_msg: "Java Version: {{ java_version.stderr }}"
+        java_msg: "Java Version: {{ java_version.stdout | regex_search('([0-9]+\\.[0-9]+\\.[0-9]+(_[0-9]+)?)') }}"
       when: java_version is defined and 'stdout' in java_version
 
     - name: Get Metricbeat version
@@ -150,11 +149,6 @@
         nginx_msg: "Nginx Version: {{ nginx_version.stderr }}"
       when: nginx_version is defined and 'stdout' in nginx_version
 
-    - name: Set Ansible version message
-      set_fact:
-        ansible_msg: "Ansible Version: {{ ansible_version.full }}"
-      when: ansible_version is defined and 'stdout' in ansible_version
-
     - name: Get LibXML version
       command:
         cmd: xml2-config --version
@@ -174,7 +168,7 @@
       set_fact:
         messages: "{{ [ubuntu_msg|default(''), pyhon_msg|default(''), java_msg|default(''), metricbeat_msg|default(''), elasticsearch_msg|default(''),
         local_elasticsearch_msg|default(''), kibana_msg|default(''), logstash_msg|default(''), redis_msg|default(''), kafka_msg|default(''),
-        nginx_msg|default(''), debian_iso_list_msg|default(''), ansible_msg|default(''), libxml_msg|default('')] | select('ne', '') | list }}"
+        nginx_msg|default(''), libxml_msg|default('')] | select('ne', '') | list }}"
 
     - name: Display gathered versions
       debug:
@@ -196,13 +190,27 @@
 
     - name: Filter and display lines starting with specific text
       set_fact:
-        debian_iso_list_version: "{{ file_content.stdout_lines | select('match', '^REVISION.*$') | list }}"
+        debian_iso_list_version: "{{ (file_content.stdout_lines | select('match', '^REVISION.*$') | list | first) | regex_search('REVISION\\s*=\\s*\"([^\"]+)\"', '\\1') }}"
 
     - name: Delete the cloned directory
       file:
         path: "{{ pycountry_dir }}"
         state: absent
 
-    - name: Display version
+    - name: Set debian iso list version message
+      set_fact:
+        debian_iso_list_msg: "Debian ISO list Version: {{ debian_iso_list_version }}"
+      when: debian_iso_list_version is defined
+
+    - name: Set Ansible version message
+      set_fact:
+        ansible_msg: "Ansible Version: {{ ansible_version.full }}"
+      when: ansible_version is defined
+
+    - name: Collect all messages
+      set_fact:
+        messages: "{{ [debian_iso_list_msg|default(''), ansible_msg|default('')] }}"
+
+    - name: Display gathered versions
       debug:
-        var: debian_iso_list_version
+        msg: "{{ messages }}"
