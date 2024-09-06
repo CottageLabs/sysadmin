@@ -1,5 +1,9 @@
 ## Ansible tasks for DOAJ
 
+The symlink in the root `doaj -> ansible/` is for backward compatibility for old aliases
+
+---
+
 You'll need to have ansible installed. Tested on version 2.7.0
 
 * Deploy new updates on the master branch to servers:
