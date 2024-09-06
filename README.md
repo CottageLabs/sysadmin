@@ -5,7 +5,7 @@ A versioned mix of utility scripts, config files and utilities used at Cottage L
 
 Copyright and License
 ====================
-Copyright 2013 Cottage Labs LLP
+Copyright 2013-2024 Cottage Labs LLP
 
 Licensed under the `MIT License`_
 
