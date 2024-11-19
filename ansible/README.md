@@ -4,13 +4,25 @@ The symlink in the root `doaj -> ansible/` is for backward compatibility for old
 
 ---
 
-You'll need to have ansible installed. Tested on version 2.7.0
+You'll need to have ansible installed. Tested on version 2.15.1
+
+For tasks that set up new machines, you'll need the digitalocean ansible collection:
+
+	ansible-galaxy collection install -r requirements.yml
+
+For this you'll also need your Digital Ocean personal access token,
+https://docs.digitalocean.com/reference/api/create-personal-access-token/
+and set the environment variable on your local machine `$DIGITALOCEAN_TOKEN`.
+
+See the documentation https://docs.digitalocean.com/reference/ansible/reference/ for more info.
+
+---
 
 * Deploy new updates on the master branch to servers:
 
 	ansible-playbook -i doaj-hosts.ini update-site.yml
 
-# Deploy new configuration on AWS secrets manager to app machines (runs the deploy script only)
+* Deploy new configuration on AWS secrets manager to app machines (runs the deploy script only)
 
 	ansible-playbook -i doaj-hosts.ini update-config.yml
 
