@@ -9,21 +9,28 @@
     public_key: "{{ lookup('ansible.builtin.file', ansible_env['HOME'] ~ '/.ssh/cl_ed25519.pub') }}"
 
   tasks:
-    - name: Ensure root user SSH keys are uploaded 
-      digitalocean.cloud.ssh_key:
-        state: present
-        token: "{{ digitalocean_token }}"
-        public_key: "{{ public_key }}"
-        name: "steve_ed25519"
-      register: ssh_key
+    #- name: Ensure root user SSH keys are uploaded
+    #  digitalocean.cloud.ssh_key:
+    #    state: present
+    #    token: "{{ digitalocean_token }}"
+    #    public_key: "{{ public_key }}"
+    #    name: "steve_ed25519"
+    #  register: ssh_key
 
-    - name: Create Droplet
+    - name: Create Droplet with root access Steve and Rama
       digitalocean.cloud.droplet:
         state: present
         token: "{{ digitalocean_token }}"
         name: doaj-test-x
         region: lon1
-        size: s-1vcpu-2gb
+        size: s-4vcpu-8gb
+        tags:
+          - doaj-test
+          - firewall-web-ssh
         image: ubuntu-22-04-x64
-        ssh_keys: ["{{ ssh_key.ssh_key.id }}", "40223915"]
+        #ssh_keys: ["{{ ssh_key.ssh_key.id }}", "40223915"]
+        ssh_keys: ["30242381", "40223915"]
         unique_name: true
+        monitoring: true
+        user_data: "{{ playbook_dir }}/../../cloud_init_userdata/doaj-test_cloud-config.txt"
+

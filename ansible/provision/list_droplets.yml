@@ -1,8 +1,8 @@
 ---
-- name: SSH keys
+- name: Droplets
   hosts: localhost
   connection: local
   gather_facts: false
   tasks:
-    - name: Get SSH keys
-      digitalocean.cloud.ssh_keys_info:
+    - name: Get Info on all droplets
+      digitalocean.cloud.droplets_info:

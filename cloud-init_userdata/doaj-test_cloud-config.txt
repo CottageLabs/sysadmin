@@ -1,0 +1,46 @@
+#cloud-config
+## Add and configure new user cloo, authorized keys for aga, rama, richard and steve
+users:
+  - name: cloo
+    ssh-authorized-keys:
+      - ssh-dss AAAAB3NzaC1kc3MAAACBAIhJr66ZMNTRonCl1bk1AG3hrIs/aCWz2x8z4OscJdSxCCNgoKq3o0Qi9zBpxX+LvcJcIGP1WZvmLDU2kCLSLpQ+NT7/qEpytiwJPkmwXH4iKPgOVMCOlNE4o/hbdQd2j5ZnzdqKBmUWVxhGc/hcLcXMeIgmVwH7+qDBM/8IPPD/AAAAFQCwXFyTh8Qfh7CeiyQe4OpeXMOSSwAAAIANRzKwwW9TCqox/C5z9/necenp7llEnyTAoBBI9L+z84l8i96jOCjs1PMRhlO+vDjaWVHNKJOa4/Mzg8WiBl2YAldaI/xz/PKssjbkeTxMZGqZJa9UFfOkuR8OLhGCUYihDuFY+4d4kZAvip/fzCFD/SVQHJ0TP4Uxw0r/5Mp/2QAAAIBjd1aabi10j9oFBfQI+u+MxGDZTUZULghhaRFmal2MIKboIIeTneVfdBYI6NGzpjo608PLd9JX4P4Mu35LpljMgpv5Yxim3iVzl1LW5HmQ/qUyEGwFlP4FvGrR9MftOTto2bgObqHvTBeQvKsqfz+Fp5/XTLnqDu9zNf3IncGGxw== richard@holly
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAFb1SNKeovfTz1JXrok00+s6YREBlgKFlrDEYh7Dh+D steve@cottagelabs.com
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC5yZ7PslsagFUAF8v1xqa5SnEOEsghQXRybzxotbdGBFb5sEQJRb8BuBrgSLnQ2743DSzceAozY+fuOeVycn2lHdqri7VMsZgoxqEoAM1X6Xo5ANHWERTZZyVdSo2MoIl1fDlLM5mvvXJvu5tN1wY8JzOkDa+YtF1rP0KT2Uvs8FEyXiM2bU5rzsC/FbTiB+f0vdA9u9VqLlMtYy0Oefd/ERzKdJD70vkr18MyMypnciCQulTfYy1+7C/IVIhGG4r/k//NLTDw1Ii51jnAplfG/82jnB8eavUicqLGHgFY2NJzBfQ5riHVxG7O35+vLNSdOTiBbgute2SqOz8XKcJZOO9woRzm0iP/+1Bt1FHd2BBc6KdUFVbMvZNvhKcc6kyDYIy19lXSr/YOW9mlShXe+C0hvM66xA/tP9bqpK2kzE9NJAYjSP3ODx5ShXivbBHm/b2QhSxq7y+0ioD4hILTRtsvpaBhSb5Jp2wdf/8sYSmENna7NbIZrSBAP+dMWQBZ/VrXgnh4Mz6F0LV79PldjSlYY7skzl5TC265WDqmR3fSYMk1RFpSn1/AYO0AGwwCc+mrzGRbMWF5GcRD4ea1L2wYoL6AyYjVZJ6kkmeswIEFqIW+yQ/jxhslYRGyeGQ4YxM4b8U0bl3iSVjbXHiSVnHMC4tnGyFh0pa98NOIHQ== aga@cottagelabs.com
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCtxwRkaX+jvQw0w5bpuedW7DIizUQiz3HYe8QW/mo8ykgW7FCU21OjYTM3+/yopmvR4BbgpuUioKvzC0rx+rVpi+OvxepcHqIXdmmw05ucFbRA+rZXMh1bYkZmpoxfazHPFfJJ1Ne6MRcQTzKbH/BZyhiZ8Av3UXj12pm2mhj0qhtY8+VK3th1xeeRHx0pfTs53fTpSUu+OIighZOejS9LXE+kqJ/xFh3dhFDrvK/j9ow5BLEcETNQYWV7gVwybQXljqk1HEk4gdbHGFtaXKo+sTzIreT5aRcED/f4+geKLQ+c+g6F39LlwCK5JUPaPgL+nQ5kojBvdnNN5i9ruHfj ramakrishnasakhamuru@Ramakrishnas-MacBook-Pro.local
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINtrZckwCxs5+U8FRUuysV5U+2o1jULYETUk6ZTmRuSa 
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDQ+TdfOLc8Vz3P8EMytXIwg+Y58UvoDwUi42fo3NRTDoe3XNEzEOe6RSH5hLNioHKFoiR9gtrd9Qz1zbvY6/ZkV2bwdwkUZbWEeNgoqW6apTE6jrGu4HtuZnZGkioJP8VON49SqL6N775XhY6wKPBeQYAXsxksomeJW//zoKYp8xr9F1hxaEjarIzaZGrrcCiNaPQabZ5K5Vt3Z92o26F68gekU4/TfA2KhcJK6HuATYCeN9ZdkuSHpamhAk9eaXfpIAIlggCNOY7XfTN+6WPMLal1zXoRJ3YsyQBnR5Q/GfbebSTDGC1DIwdt5kIV+kniTxK7N8gq6mIYbdas46eM6bHC2TL+SAQ9LCLwFMfRAZoLQIHD1D+ans7rOrAj8gkBicG+OjNZK6WU+WTSDXmVnZp3Qao7L8Fi35BrugEUh+L5k23M9KdrtBG0/dH6EsVRedcKsT3+yMBjT0cwoM/QfIiPoThiQYbHJSsnXP4WxEAs6Jc3uLeQOkExSgzF+228tjAk6rmrRnHsLrZNnGxKHwAZ4ZxzKilwuQfrcTxwLNVYizo9ThraYResdg7asFwiYQv033KskUVd5oDLZTC6KDelu0NAV2SIq/225CiSDzjfBxLrs7sMrxv7LtefggkgopL8khxZjo00137OYq/TT111lxsau0FKeO8eRPwXoQ== steve@cottagelabs.com
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC8yL7105QCkduxqgYl4vKEGFyG9nFMFn5NBo4FjnD+J5NPxO3zjQ+DxY0hO1JLdwpGUfm+C+vS9OqzX/RjyKe/4+TLLRzys1uJKDKZLccv/GkPhu1bVX+0cTNDIGaYAjwNdQ6E41G0MT30AGOa/Psp9T0O3CYICzHTAqYUSbR/lsYf8I9sIkFMqjJld8Rf92Rs113CVChtZnKz9ynybOk7gUdq+RkPnMdn5oRaCKWWzSZIgnE2vrDgD8goFJS/KdMt5xlMUB4Mw259bApZsOdvPtX5Jkf92OI0PVA5JJKZ2flMVhAcIAZMVip3idyoajdXp07j9J7QwI5BjkKTzbKj richard@cottagelabs.com
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAjvBPCryTSeDGS3DxNbzQ/JaBbAsivdPzeKgnDKKlad ansible-steve-doaj@cottagelabs.com
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDG8XuHuQ0W51+zPnbdz1O3YRNNV5X8H3L0ylHWiWtop8x6Qp1EBoXxcZaxNYtj4nRI0Wrh0POzA/0VwMvMhvTbbkJyb/z9/WUEmDinIP31TBYCae3elfv/OztPsRHlIxV84Xmcfsth6OlLgj2+BO9ss8csRwYrkgOTEbuEVN+sfkG/iSnhgkQx/KXnMCnWvCDcn0+48sWgMMHgfdcVl1J2YCUTM2KnucoVuNOB+nuJcEbxxbXxI5CUQg9DOLbk14mpNOEHFR6ojs4163rcUGTFRprCp7mycqAmBVaDctF6kLOzO3gpy0jWdowfu/4OdCMIG99KttieSWGrIFEb5473dt8mS+9wkU7sQWOFYGepzPps1xgLr0XInS+sFWHMcftBgnlcJuFoFYpbpz1hNARnCPwP7Z0MeLVjhnKExCWzYB3eNEQ2M+J5vuWiw18EauLFr8I4hMxUDWzugdRqoqHJPVWehjd6KEKv3cG6ZJRZj9LuxNys51TllY7vhUFlPHk= kk@kk-desk
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    groups: sudo
+    shell: /bin/bash
+
+## Disable password authentication with the SSH daemon
+ssh_pwauth: false
+
+## Update apt database and upgrade packages on first boot
+package_update: true
+package_upgrade: true
+
+## Install additional packages on first boot
+packages:
+  - git
+  - screen
+  - htop
+  - tree
+  - python3-dev
+  - python3-pip
+  - gcc
+  - nginx
+  - apache2-utils
+  - certbot
+  - python3-certbot-nginx
+  - rng-tools
+  - python3-virtualenv
+  - python3-distutils
+  - supervisor
+  - libxml2-dev
+  - libxslt-dev
+  - lib32z1-dev
+  - redis
