@@ -1,0 +1,17 @@
+---
+- name: Create SSH key and Droplet
+  hosts: localhost
+  connection: local
+  gather_facts: true
+
+  vars:
+      digitalocean_token: "{{ lookup('ansible.builtin.env', 'DIGITALOCEAN_TOKEN') }}"
+
+  tasks:
+    - name: Create domain A record
+      digitalocean.cloud.domain_record:
+        token: "{{ digitalocean_token }}"
+        domain_name: doaj.cottagelabs.com
+        type: A
+        name: test1
+        data: 209.97.137.38
