@@ -6,31 +6,51 @@
 
   vars:
     digitalocean_token: "{{ lookup('ansible.builtin.env', 'DIGITALOCEAN_TOKEN') }}"
-    public_key: "{{ lookup('ansible.builtin.file', ansible_env['HOME'] ~ '/.ssh/cl_ed25519.pub') }}"
-
+    server_config: "{{ lookup('ansible.builtin.file', '../../cloud-init_userdata/doaj-test_cloud-config.txt') }}"
+    dns_domain: doaj.cottagelabs.com
+    dns_prefix: test3
+    droplet_name: doaj-test-y
+  
   tasks:
-    #- name: Ensure root user SSH keys are uploaded
-    #  digitalocean.cloud.ssh_key:
-    #    state: present
-    #    token: "{{ digitalocean_token }}"
-    #    public_key: "{{ public_key }}"
-    #    name: "steve_ed25519"
-    #  register: ssh_key
 
-    - name: Create Droplet with root access Steve and Rama
+    - name: Create Droplet with root access Steve and Rama, using test server userdata
       digitalocean.cloud.droplet:
         state: present
         token: "{{ digitalocean_token }}"
-        name: doaj-test-x
+        name: '{{droplet_name}}'
         region: lon1
         size: s-4vcpu-8gb
         tags:
           - doaj-test
           - firewall-web-ssh
         image: ubuntu-22-04-x64
-        #ssh_keys: ["{{ ssh_key.ssh_key.id }}", "40223915"]
+        # Run task list_ssh_keys.yml to get the key IDs
         ssh_keys: ["30242381", "40223915"]
+        ipv6: true
         unique_name: true
         monitoring: true
-        user_data: "{{ playbook_dir }}/../../cloud_init_userdata/doaj-test_cloud-config.txt"
+        backups: false
+        with_droplet_agent: true
+        user_data: "{{ server_config }}"
 
+    - name: Get info on our new droplet to get the IP
+      digitalocean.cloud.droplets_info:
+        name: '{{droplet_name}}'
+      register: dropletinfo 
+
+    - name: Parse out the assigned IP
+      ansible.builtin.set_fact:
+        public_ip: "{{ dropletinfo['droplets'][0]['networks']['v4'] | selectattr('type', '==', 'public') | map(attribute='ip_address') | first }}"
+
+    - name: Create domain A record
+      digitalocean.cloud.domain_record:
+        token: "{{ digitalocean_token }}"
+        domain_name: '{{ dns_domain }}'
+        type: A
+        name: '{{ dns_prefix }}'
+        data: "{{ public_ip }}"
+
+    - name: Output a summary including login command
+      ansible.builtin.debug:
+        msg: "Test server created: cloo@{{dns_prefix}}.{{dns_domain}} at IP {{public_ip}}"
+      

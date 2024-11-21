@@ -1,0 +1,18 @@
+---
+- name: Upload SSH key to DO
+  hosts: localhost
+  connection: local
+  gather_facts: true
+
+  vars:
+    digitalocean_token: "{{ lookup('ansible.builtin.env', 'DIGITALOCEAN_TOKEN') }}"
+    public_key: "{{ lookup('ansible.builtin.file', ansible_env['HOME'] ~ '/.ssh/cl_ed25519.pub') }}"
+
+  tasks:
+    - name: Ensure root user SSH keys are uploaded
+      digitalocean.cloud.ssh_key:
+        state: present
+        token: "{{ digitalocean_token }}"
+        public_key: "{{ public_key }}"
+        name: "steve_ed25519"
+      register: ssh_key

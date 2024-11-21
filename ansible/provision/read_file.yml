@@ -1,0 +1,10 @@
+---
+- name: Cat a file to variable
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Create Droplet with root access Steve and Rama, using test server userdata
+      ansible.builtin.debug:
+        msg: "the value of foo.txt is {{ lookup('ansible.builtin.file', '../../cloud-init_userdata/doaj-test_cloud-config.txt') }}"

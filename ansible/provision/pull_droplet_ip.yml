@@ -1,0 +1,14 @@
+---
+- name: Droplets
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Get Info on specific droplet
+      digitalocean.cloud.droplets_info:
+        name: doaj-test-x
+      register: dropletinfo 
+
+    - name: Parse and display the IP assigned
+      ansible.builtin.debug:
+        msg: "{{ dropletinfo['droplets'][0]['networks']['v4'] | selectattr('type', '==', 'public') | map(attribute='ip_address') | first }}"
