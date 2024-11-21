@@ -36,11 +36,12 @@
     - name: Get info on our new droplet to get the IP
       digitalocean.cloud.droplets_info:
         name: '{{droplet_name}}'
-      register: dropletinfo 
+      register: dropletinfo
 
     - name: Parse out the assigned IP
       ansible.builtin.set_fact:
         public_ip: "{{ dropletinfo['droplets'][0]['networks']['v4'] | selectattr('type', '==', 'public') | map(attribute='ip_address') | first }}"
+        droplet_id: "{{ dropletinfo['droplets'][0]['id'] }}"
 
     - name: Create domain A record
       digitalocean.cloud.domain_record:
@@ -53,4 +54,6 @@
     - name: Output a summary including login command
       ansible.builtin.debug:
         msg: "Test server created: cloo@{{dns_prefix}}.{{dns_domain}} at IP {{public_ip}}"
-      
+    
+    - name: Generate assign to DOAJ doctl command
+      local_action: ansible.builtin.command doctl projects resources assign f7668431-327e-47d8-9d7e-73e713fe1d4d --resource=do:droplet:{{ droplet_id }}
