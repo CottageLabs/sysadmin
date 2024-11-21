@@ -1,0 +1,35 @@
+---
+- name: Destroy a test server and its DNS
+  hosts: localhost
+  connection: local
+  gather_facts: true
+
+  vars:
+    digitalocean_token: "{{ lookup('ansible.builtin.env', 'DIGITALOCEAN_TOKEN') }}"
+    droplet_name: test1
+    dns_prefix: '{{ droplet_name }}'
+    dns_domain: doaj.cottagelabs.com
+  
+  tasks:
+
+    - name: Destroy droplet by name
+      digitalocean.cloud.droplet:
+        state: absent
+        token: "{{ digitalocean_token }}"
+        name: '{{ droplet_name }}'
+        unique_name: true
+        region: lon1
+      register: destroy_response
+
+    - name: Parse out the assigned IP
+      ansible.builtin.set_fact:
+        public_ip: "{{ destroy_response['droplet']['networks']['v4'] | selectattr('type', '==', 'public') | map(attribute='ip_address') | first }}"
+
+    - name: Clean up the corresponding DNS record 
+      digitalocean.cloud.domain_record:
+        token: "{{ digitalocean_token }}"
+        domain_name: '{{ dns_domain }}'
+        type: A
+        name: '{{ dns_prefix }}'
+        data: "{{ public_ip }}"
+        state: absent

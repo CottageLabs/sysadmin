@@ -7,9 +7,9 @@
   vars:
     digitalocean_token: "{{ lookup('ansible.builtin.env', 'DIGITALOCEAN_TOKEN') }}"
     server_config: "{{ lookup('ansible.builtin.file', '../../cloud-init_userdata/doaj-test_cloud-config.txt') }}"
+    droplet_name: test1
+    dns_prefix: '{{ droplet_name }}'
     dns_domain: doaj.cottagelabs.com
-    dns_prefix: test3
-    droplet_name: doaj-test-y
   
   tasks:
 
