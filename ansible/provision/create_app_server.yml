@@ -1,13 +1,13 @@
 ---
-- name: Bring up a new DOAJ test server
+- name: Bring up a new DOAJ application server
   hosts: localhost
   connection: local
   gather_facts: true
 
   vars:
     digitalocean_token: "{{ lookup('ansible.builtin.env', 'DIGITALOCEAN_TOKEN') }}"
-    server_config: "{{ lookup('ansible.builtin.file', '../../cloud-init_userdata/doaj-test_cloud-config.txt') }}"
-    droplet_name: test1
+    server_config: "{{ lookup('ansible.builtin.file', '../../cloud-init_userdata/doaj-app_cloud-config.txt') }}"
+    droplet_name: doaj-public-app
     dns_prefix: '{{ droplet_name }}'
     dns_domain: doaj.cottagelabs.com
   
@@ -42,14 +42,6 @@
       ansible.builtin.set_fact:
         public_ip: "{{ dropletinfo['droplets'][0]['networks']['v4'] | selectattr('type', '==', 'public') | map(attribute='ip_address') | first }}"
         droplet_id: "{{ dropletinfo['droplets'][0]['id'] }}"
-
-    - name: Create domain A record
-      digitalocean.cloud.domain_record:
-        token: "{{ digitalocean_token }}"
-        domain_name: '{{ dns_domain }}'
-        type: A
-        name: '{{ dns_prefix }}'
-        data: "{{ public_ip }}"
     
     - name: Assign the new droplet to the DOAJ project using doctl
       local_action: ansible.builtin.command doctl projects resources assign f7668431-327e-47d8-9d7e-73e713fe1d4d --resource=do:droplet:{{ droplet_id }}
