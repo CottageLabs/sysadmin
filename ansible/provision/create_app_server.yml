@@ -23,8 +23,8 @@
         #size: s-4vcpu-8gb
         #size: s-2vcpu-4gb
         tags:
-          - doaj-test
-          - firewall-web-ssh
+          - doaj
+          - firewall-doaj-app
         image: ubuntu-22-04-x64
         # Run task list_ssh_keys.yml to get the key IDs
         ssh_keys: ["30242381", "40223915"]
