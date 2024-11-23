@@ -7,19 +7,21 @@
   vars:
     digitalocean_token: "{{ lookup('ansible.builtin.env', 'DIGITALOCEAN_TOKEN') }}"
     server_config: "{{ lookup('ansible.builtin.file', '../../cloud-init_userdata/doaj-app_cloud-config.txt') }}"
-    droplet_name: doaj-public-app
-    dns_prefix: '{{ droplet_name }}'
-    dns_domain: doaj.cottagelabs.com
+    droplet_name: doaj-public-1
+    #droplet_name: doaj-background-1
+    #droplet_name: doaj-editor-1
   
   tasks:
 
-    - name: Create Droplet with root access Steve and Rama, using test server userdata
+    - name: Create Droplet with root access Steve and Rama, using app server userdata
       digitalocean.cloud.droplet:
         state: present
         token: "{{ digitalocean_token }}"
         name: '{{droplet_name}}'
         region: lon1
-        size: s-4vcpu-8gb
+        size: c-4
+        #size: s-4vcpu-8gb
+        #size: s-2vcpu-4gb
         tags:
           - doaj-test
           - firewall-web-ssh
@@ -48,4 +50,4 @@
 
     - name: Output a summary including login command
       ansible.builtin.debug:
-        msg: "Test server created: cloo@{{dns_prefix}}.{{dns_domain}} at IP {{public_ip}}"
+        msg: "App server created: cloo@{{public_ip}}"
