@@ -3,9 +3,9 @@ doaj-index-1 ansible_host=161.35.175.250 ansible_user=cloo ansible_ssh_private_k
 doaj-index-2 ansible_host=64.227.32.57 ansible_user=cloo ansible_ssh_private_key_file=~/.ssh/cl-doaj
 
 [app]
-doaj-public-1 ansible_host=134.209.177.128 ansible_user=cloo ansible_ssh_private_key_file=~/.ssh/cl-doaj
-doaj-editor-1 ansible_host=159.65.52.96 ansible_user=cloo ansible_ssh_private_key_file=~/.ssh/cl-doaj
-doaj-background-1 ansible_host=144.126.195.25 ansible_user=cloo ansible_ssh_private_key_file=~/.ssh/cl-doaj
+doaj-public-app-1 ansible_host=159.65.23.246 ansible_user=cloo ansible_ssh_private_key_file=~/.ssh/cl-doaj
+doaj-editor-app-1 ansible_host=167.99.80.203 ansible_user=cloo ansible_ssh_private_key_file=~/.ssh/cl-doaj
+doaj-background-app-1 ansible_host=139.59.174.48 ansible_user=cloo ansible_ssh_private_key_file=~/.ssh/cl-doaj
 
 [monitor]
 doaj-kibana ansible_host=138.68.157.255 ansible_user=cloo ansible_ssh_private_key_file=~/.ssh/cl-doaj
