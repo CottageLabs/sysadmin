@@ -1,0 +1,55 @@
+## command using IP address -
+# ansible-playbook -i 192.168.1.100, server_initial_setup.yml -e "git_branch=feature/new-feature ansible_user=ubuntu" --private-key=~/.ssh/id_rsa
+## command using a specific host or group from your inventory.
+# ansible-playbook -i doaj-hosts.ini server_initial_setup.yml --limit "hostname_or_ip" -e "git_branch=feature/new-feature"
+---
+- name: Setup VM for DOAJ application
+  hosts: all
+  become: true  # Escalate privileges if needed
+  vars:
+    git_branch: "main"
+  tasks:
+    - name: Debug hostname
+      debug:
+        msg: "Running on host {{ inventory_hostname }}"
+    - name: Ensure Python3 and Git are installed
+      apt:
+        name:
+          - python3
+          - python3-venv
+          - git
+        state: present
+        update_cache: yes
+
+    - name: Create doaj directory
+      file:
+        path: /home/{{ ansible_user }}/doaj
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'
+
+    - name: Create Python virtual environment
+      command: python3 -m venv /home/{{ ansible_user }}/doaj/venv
+      args:
+        creates: /home/{{ ansible_user }}/doaj/venv
+
+    - name: Create src/doaj directory
+      file:
+        path: /home/{{ ansible_user }}/doaj/src/doaj
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'
+
+    - name: Clone git repository
+      git:
+        repo: "https://github.com/DOAJ/doaj.git"
+        dest: /home/{{ ansible_user }}/doaj/src/doaj
+        version: master
+        force: yes
+      become_user: "{{ ansible_user }}"
+
+    - name: Debug git branch
+      debug:
+        msg: "Using Git branch: {{ git_branch }}"
