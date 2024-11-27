@@ -1,0 +1,39 @@
+# Set up Redis in production for access from other machines (on the background server)
+# NOTE: Firewall isn't handled here. It should be set in DO or the provision script.
+
+## ansible-playbook -i ../doaj-hosts.ini redis_setup.yml --limit "doaj-background-1"
+---
+
+- name: Setup Redis for common access from app servers
+  hosts: bg
+  become: true
+  gather_facts: yes
+
+  tasks:
+    - name: Debug hostname
+      debug:
+        msg: "Configuring redis on host {{ inventory_hostname }} with internal IP {{ ansible_facts.eth1.ipv4.address }}"
+    
+    - name: Ensure redis is installed
+      apt:
+        name:
+          - redis
+        state: present
+        update_cache: yes
+
+    - name: Edit the redis config to expose redis over eth1
+      lineinfile: 
+        dest: /etc/redis/redis.conf
+        regexp: '^bind\s+'
+        line: "bind {{ ansible_facts.eth1.ipv4.address }} 127.0.0.1 ::1"
+        state: present
+        backup: yes
+        backrefs: yes
+      register: config_updated
+
+    - name: Restart redis with the new configuration if necessary
+      ansible.builtin.service:
+        name: redis-server
+        state: restarted
+      when: config_updated
+

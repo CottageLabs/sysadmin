@@ -4,7 +4,7 @@
 # ansible-playbook -i doaj-hosts.ini server_initial_setup.yml --limit "hostname_or_ip" -e "git_branch=feature/new-feature"
 ---
 - name: Setup VM for DOAJ application
-  hosts: all
+  hosts: all:!index
   become: true  # Escalate privileges if needed
   vars:
     git_branch: "main"
