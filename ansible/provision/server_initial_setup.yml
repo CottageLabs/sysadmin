@@ -5,14 +5,14 @@
 
 ---
 - name: Setup VM for DOAJ application
-  hosts: all:!index
-  become: true  # Escalate privileges if needed
+  hosts: doaj-editor-1 #all:!index
   gather_facts: yes
   vars:
     git_branch: "master"
     repo_url: "https://github.com/DOAJ/doaj.git"
     venv_path: "/home/{{ ansible_user }}/doaj/venv"
     destination: "/home/{{ ansible_user }}/doaj"
+    deploy_env: test # or production
     aws_profile: "my_profile"
     aws_access_key: "your_access_key"
     aws_secret_key: "your_secret_key"
@@ -23,62 +23,47 @@
       debug:
         var: ansible_facts
 
-    - name: Debug hostname
+    - name: Summarise actions
       debug:
-        msg: "Running on host {{ inventory_hostname }}"
+        msg: "Deploying branch {{ git_branch }} on host {{ inventory_hostname }}"
 
-    - name: Ensure Python3 and Git are installed
+    - name: Ensure Python3, supervisor, and Git are installed
       apt:
         name:
           - python3
           - python3-venv
           - git
+          - supervisor
         state: present
         update_cache: yes
-
-    - name: Create doaj directory
-      file:
-        path: "{{ destination }}"
-        state: directory
-        owner: "{{ ansible_user }}"
-        group: "{{ ansible_user }}"
-        mode: '0755'
-
-    - name: Debug git branch
-      debug:
-        msg: "Using Git branch: {{ git_branch }}"
+      become: yes
 
     - name: Clone git repository
       git:
         repo: "{{ repo_url }}"
         dest: "{{ destination }}"
         version: "{{ git_branch }}"
+        depth: 1
         force: yes
-      become_user: "{{ ansible_user }}"
       register: git_result
 
     - name: Debug git clone result
       debug:
         var: git_result
 
-    - name: Create Python virtual environment
-      command: python3 -m venv {{ destination }}/venv
-      args:
-        creates: "{{ venv_path }}"
+    - name: Create a virtualenv with an up-to-date pip & awscli
+      ansible.builtin.pip:
+        name:
+        - pip
+        - awscli
+        virtualenv: "{{ venv_path }}"
+        state: latest
 
     - name: Ensure ~/.aws directory exists
       file:
         path: "/home/{{ ansible_user }}/.aws"
         state: directory
-        owner: "{{ ansible_user }}"
-        group: "{{ ansible_user }}"
         mode: '0700'
-
-    - name: Upgrade pip in the virtual environment
-      command: "{{ venv_path }}/bin/pip install --upgrade pip"
-
-    - name: Install AWS CLI in the virtual environment
-      command: "{{ venv_path }}/bin/pip install awscli"
 
     - name: Write AWS credentials file
       copy:
@@ -100,10 +85,27 @@
         owner: "{{ ansible_user }}"
         mode: '0600'
 
-    - name: Download secrets using the virtual environment
-      shell: |
-        source "{{ venv_path }}/bin/activate" && \
-        aws --profile {{aws_profile}} secretsmanager get-secret-value \
-        --secret-id "{{aws_secret_id}}" | cut -f4 | base64 -d > /home/{{ ansible_user }}/doaj/app.cfg
-      args:
-        executable: /bin/bash
+    - name: Create symlinks for supervisor
+      ansible.builtin.file:
+        src: "{{ destination }}/deploy/supervisor/{{ deploy_env }}/{{ item }}"
+        dest: /etc/supervisor/conf.d/{{ item }}
+        state: link
+      loop:
+        - doaj.conf
+        - huey-long-running.conf
+        - huey-main.conf
+      become: yes
+
+    - name: Ensure supervisor knows about our tasks
+      community.general.supervisorctl:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - doaj
+        - huey-long-running
+        - huey-main
+      become: yes
+
+    - name: Call the install script deploy.sh to install the app
+      shell: "{{ destination }}/deploy/deploy.sh {{ deploy_env }}"
+      
