@@ -1,17 +1,32 @@
 ## command using IP address -
-# ansible-playbook -i 192.168.1.100, server_initial_setup.yml -e "git_branch=feature/new-feature ansible_user=ubuntu" --private-key=~/.ssh/id_rsa
+# ansible-playbook -i 192.168.1.100, server_initial_setup.yml --e "git_branch=feature/form_experiment ansible_user=cloo aws_profile=doaj-test-upload aws_access_key=key aws_secret_key=key  aws_scret_id=doaj/test-credentials" --private-key=~/.ssh/id_rsa -vv
 ## command using a specific host or group from your inventory.
 # ansible-playbook -i doaj-hosts.ini server_initial_setup.yml --limit "hostname_or_ip" -e "git_branch=feature/new-feature"
+
 ---
 - name: Setup VM for DOAJ application
   hosts: all:!index
   become: true  # Escalate privileges if needed
+  gather_facts: yes
   vars:
-    git_branch: "main"
+    git_branch: "master"
+    repo_url: "https://github.com/DOAJ/doaj.git"
+    venv_path: "/home/{{ ansible_user }}/doaj/venv"
+    destination: "/home/{{ ansible_user }}/doaj"
+    aws_profile: "my_profile"
+    aws_access_key: "your_access_key"
+    aws_secret_key: "your_secret_key"
+    aws_region: "eu-west-2"
+    aws_secret_id: "test-credentials"
   tasks:
+    - name: Debug all available facts
+      debug:
+        var: ansible_facts
+
     - name: Debug hostname
       debug:
         msg: "Running on host {{ inventory_hostname }}"
+
     - name: Ensure Python3 and Git are installed
       apt:
         name:
@@ -23,33 +38,72 @@
 
     - name: Create doaj directory
       file:
-        path: /home/{{ ansible_user }}/doaj
+        path: "{{ destination }}"
         state: directory
         owner: "{{ ansible_user }}"
         group: "{{ ansible_user }}"
         mode: '0755'
-
-    - name: Create Python virtual environment
-      command: python3 -m venv /home/{{ ansible_user }}/doaj/venv
-      args:
-        creates: /home/{{ ansible_user }}/doaj/venv
-
-    - name: Create src/doaj directory
-      file:
-        path: /home/{{ ansible_user }}/doaj/src/doaj
-        state: directory
-        owner: "{{ ansible_user }}"
-        group: "{{ ansible_user }}"
-        mode: '0755'
-
-    - name: Clone git repository
-      git:
-        repo: "https://github.com/DOAJ/doaj.git"
-        dest: /home/{{ ansible_user }}/doaj/src/doaj
-        version: master
-        force: yes
-      become_user: "{{ ansible_user }}"
 
     - name: Debug git branch
       debug:
         msg: "Using Git branch: {{ git_branch }}"
+
+    - name: Clone git repository
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ destination }}"
+        version: "{{ git_branch }}"
+        force: yes
+      become_user: "{{ ansible_user }}"
+      register: git_result
+
+    - name: Debug git clone result
+      debug:
+        var: git_result
+
+    - name: Create Python virtual environment
+      command: python3 -m venv {{ destination }}/venv
+      args:
+        creates: "{{ venv_path }}"
+
+    - name: Ensure ~/.aws directory exists
+      file:
+        path: "/home/{{ ansible_user }}/.aws"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0700'
+
+    - name: Upgrade pip in the virtual environment
+      command: "{{ venv_path }}/bin/pip install --upgrade pip"
+
+    - name: Install AWS CLI in the virtual environment
+      command: "{{ venv_path }}/bin/pip install awscli"
+
+    - name: Write AWS credentials file
+      copy:
+        dest: "/home/{{ ansible_user }}/.aws/credentials"
+        content: |
+          [{{aws_profile}}]
+          aws_access_key_id = {{ aws_access_key }}
+          aws_secret_access_key = {{ aws_secret_key }}
+        owner: "{{ ansible_user }}"
+        mode: '0600'
+
+    - name: Write AWS config file
+      copy:
+        dest: "/home/{{ ansible_user }}/.aws/config"
+        content: |
+          [profile {{aws_profile}}]
+          output = text
+          region = {{ aws_region }}
+        owner: "{{ ansible_user }}"
+        mode: '0600'
+
+    - name: Download secrets using the virtual environment
+      shell: |
+        source "{{ venv_path }}/bin/activate" && \
+        aws --profile {{aws_profile}} secretsmanager get-secret-value \
+        --secret-id "{{aws_secret_id}}" | cut -f4 | base64 -d > /home/{{ ansible_user }}/doaj/app.cfg
+      args:
+        executable: /bin/bash
