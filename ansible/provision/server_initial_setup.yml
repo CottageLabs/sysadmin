@@ -8,7 +8,7 @@
   hosts: doaj-editor-1 #all:!index
   gather_facts: yes
   vars:
-    git_branch: "master"
+    git_branch: "develop" # or "master" or provide at runtime with -e git_branch=...
     repo_url: "https://github.com/DOAJ/doaj.git"
     venv_path: "/home/{{ ansible_user }}/doaj/venv"
     destination: "/home/{{ ansible_user }}/doaj"
@@ -94,7 +94,7 @@
 
     - name: Create symlinks for supervisor
       ansible.builtin.file:
-        src: "{{ destination }}/deploy/supervisor/{{ deploy_env }}/{{ item }}"
+        src: "{{ destination }}/deploy/supervisor/{{ deploy_env }}/{{ item + '.conf'}}"
         dest: /etc/supervisor/conf.d/{{ item + '.conf' }}
         state: link
       loop: "{{ supervisor_tasks }}"
