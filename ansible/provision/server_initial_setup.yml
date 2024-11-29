@@ -72,6 +72,29 @@
         state: directory
         mode: '0700'
 
+    - name: Ensure ~/.appdata directory exists
+      file:
+        path: "/home/{{ ansible_user }}/appdata/doaj"
+        state: directory
+        mode: '0700'
+
+    - name: Check if nginx file exists in logrotate
+      stat:
+        path: /etc/logrotate.d/nginx
+      register: nginx_file
+
+    - name: Disable nginx in logrotate
+      become: true
+      command: mv /etc/logrotate.d/nginx /etc/logrotate.d/nginx.disabled
+      when: nginx_file.stat.exists
+
+    - name: Copy logrotate config files
+      become: true
+      command: cp {{ destination }}/deploy/logrotate/{{ item }} /etc/logrotate.d/{{ item }}
+      loop:
+        - doaj-analytics
+        - doaj-nginx
+
     - name: Write AWS credentials file
       copy:
         dest: "/home/{{ ansible_user }}/.aws/credentials"
