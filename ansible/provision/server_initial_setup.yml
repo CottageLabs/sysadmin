@@ -1,13 +1,16 @@
 ## command using IP address -
-# ansible-playbook -i 192.168.1.100, server_initial_setup.yml --e "git_branch=feature/form_experiment ansible_user=cloo aws_profile=doaj-test-upload aws_access_key=key aws_secret_key=key  aws_scret_id=doaj/test-credentials" --private-key=~/.ssh/id_rsa -vv
+# ansible-playbook -i 192.168.1.100, server_initial_setup.yml --e "server_name=test1 git_branch=feature/form_experiment
+#      ansible_user=cloo aws_profile=doaj-test-upload aws_access_key=key aws_secret_key=key
+#      aws_secret_id=doaj/test-credentials" --private-key=~/.ssh/id_rsa -vv
 ## command using a specific host or group from your inventory.
 # ansible-playbook -i doaj-hosts.ini server_initial_setup.yml --limit "hostname_or_ip" -e "git_branch=feature/new-feature"
 
 ---
 - name: Setup VM for DOAJ application
-  hosts: doaj-editor-1 #all:!index
+  hosts: all:!index #doaj-editor-1 #
   gather_facts: yes
   vars:
+    server_name: "test" # name of the server/droplet
     git_branch: "develop" # or "master" or provide at runtime with -e git_branch=...
     repo_url: "https://github.com/DOAJ/doaj.git"
     venv_path: "/home/{{ ansible_user }}/doaj/venv"
@@ -18,6 +21,7 @@
     aws_secret_key: "your_secret_key"
     aws_region: "eu-west-2"
     aws_secret_id: "test-credentials"
+    domain_name: "{{ server_name + '.doaj.cottagelabs.com' if deploy_env == 'test' else 'doaj.org' }}"
     supervisor_tasks:
         - doaj
         - huey-long-running
@@ -74,9 +78,26 @@
 
     - name: Ensure ~/.appdata directory exists
       file:
-        path: "/home/{{ ansible_user }}/appdata/doaj"
+        path: "/home/{{ ansible_user }}/appdata/doaj/{{ item }}"
         state: directory
         mode: '0700'
+      loop:
+        - ga_logs
+        - history
+        - local_store
+        - upload
+        - failed_articles
+        - cache
+
+    - name: Create instance config file
+      ansible.builtin.copy:
+        dest: "{{ destination }}/instance.cfg"
+        content: |
+          BASE_URL = "http://{{ domain_name }}"
+          BASE_API_URL = "https://{{ domain_name }}/api/"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0644'
 
     - name: Check if nginx file exists in logrotate
       stat:
@@ -90,10 +111,30 @@
 
     - name: Copy logrotate config files
       become: true
-      command: cp {{ destination }}/deploy/logrotate/{{ item }} /etc/logrotate.d/{{ item }}
-      loop:
-        - doaj-analytics
-        - doaj-nginx
+      command: cp {{ destination }}/deploy/logrotate/{{deploy_env}}/doaj-nginx /etc/logrotate.d/doaj-nginx
+
+    - name: Copy logrotate config files
+      become: true
+      command: cp {{ destination }}/deploy/logrotate/doaj-analytics /etc/logrotate.d/doaj-analytics
+
+    - name: Copy nginx config file
+      become: true
+      command: cp {{ destination }}/deploy/nginx/{{deploy_env}}/doaj /etc/nginx/sites-available/{{domain_name}}
+
+    - name: Update nginx file
+      become: true
+      replace:
+        path: /etc/nginx/sites-available/{{ domain_name }}
+        regexp: "testdoaj\\.cottagelabs\\.com"
+        replace: "{{ domain_name }}"
+      when: deploy_env == "test"
+
+    - name: Create symlink for nginx
+      become: yes
+      ansible.builtin.file:
+        src: /etc/nginx/sites-available/{{ domain_name }}
+        dest: /etc/nginx/sites-enabled/{{ domain_name }}
+        state: link
 
     - name: Write AWS credentials file
       copy:
