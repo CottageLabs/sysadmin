@@ -8,8 +8,16 @@
 ---
 - name: Setup VM for DOAJ application
   hosts: all:!index #doaj-editor-1 #
-  gather_facts: yes
+  gather_facts: no
+
+  roles:
+    - role: install_roles
+      become: yes
+    - role: geerlingguy.certbot
+      become: yes
+
   vars:
+    install_es: false
     server_name: "test" # name of the server/droplet
     git_branch: "develop" # or "master" or provide at runtime with -e git_branch=...
     repo_url: "https://github.com/DOAJ/doaj.git"
@@ -29,11 +37,59 @@
         - huey-events
         - huey-scheduled-long
         - huey-scheduled-short
+    certbot_create_standalone_stop_services:
+      - nginx
+    certbot_create_extra_args: ""
+    certbot_create_if_missing: true
+    certbot_certs:
+      - domains:
+          - "{{ domain_name }}"
+        email: sysadmin@cottagelabs.com
+        state: present
+
   tasks:
     - name: Debug all available facts
       debug:
         var: ansible_facts
 
+    # ==== Install elasticsearch ====
+    - name: Import the Elasticsearch GPG key
+      become: yes
+      ansible.builtin.apt_key:
+        url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+        state: present
+      when: install_es | bool
+
+    - name: Add the Elasticsearch repository
+      become: yes
+      ansible.builtin.apt_repository:
+        repo: "deb https://artifacts.elastic.co/packages/7.x/apt stable main"
+        state: present
+      when: install_es | bool
+
+    - name: Update the apt cache
+      become: yes
+      ansible.builtin.apt:
+        update_cache: yes
+      when: install_es | bool
+
+    - name: Install Elasticsearch 7.10.2
+      become: yes
+      ansible.builtin.apt:
+        name: elasticsearch=7.10.2
+        state: present
+        allow_downgrade: yes
+      when: install_es | bool
+
+    - name: Configure Elasticsearch to start on boot
+      become: yes
+      ansible.builtin.systemd:
+        name: elasticsearch
+        enabled: yes
+        state: started
+      when: install_es | bool
+
+    # ==== ====
     - name: Summarise actions
       debug:
         msg: "Deploying branch {{ git_branch }} on host {{ inventory_hostname }}"
@@ -136,6 +192,20 @@
         dest: /etc/nginx/sites-enabled/{{ domain_name }}
         state: link
 
+    - name: Create symlink for nginx redirects
+      become: yes
+      ansible.builtin.file:
+        src: "{{ destination }}/deploy/nginx/doaj-redirects.map"
+        dest: /etc/nginx/doaj-redirects.map
+        state: link
+
+    - name: Add www-data user to the user group
+      ansible.builtin.user:
+        name: www-data
+        group: "{{ ansible_user }}"
+        append: yes
+      become: yes
+
     - name: Write AWS credentials file
       copy:
         dest: "/home/{{ ansible_user }}/.aws/credentials"
@@ -173,4 +243,3 @@
 
     - name: Call the install script deploy.sh to install the app
       shell: "{{ destination }}/deploy/deploy.sh {{ deploy_env }}"
-      

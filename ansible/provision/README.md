@@ -1,10 +1,12 @@
 ## Create, Destroy, and View DigitalOcean resources
 
+Install required collections
+
+    ansible-galaxy collection install -r requirements.yml
+
 ## TODO:
 
- - [ ] ansible galaxy modules required - Digital Ocean and Community General for supervisorctl
- - [ ] refactor into roles
- - [ ] more TODOs
+ -[ ] more TODOs
 
 It's handy to have the yaml callback for readability. Example command:
 

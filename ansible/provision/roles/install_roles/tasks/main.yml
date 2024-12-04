@@ -1,0 +1,6 @@
+---
+- name: Install geerlingguy.certbot role
+  ansible.builtin.command:
+    cmd: ansible-galaxy install geerlingguy.certbot
+  args:
+    creates: "{{ ansible_env.HOME }}/.ansible/roles/geerlingguy.certbot"

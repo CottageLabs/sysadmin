@@ -1,0 +1,6 @@
+---
+collections:
+  - name: digitalocean.cloud
+    version: latest
+  - name: community.general
+    version: latest

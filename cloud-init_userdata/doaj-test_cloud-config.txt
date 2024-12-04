@@ -44,3 +44,4 @@ packages:
   - libxslt-dev
   - lib32z1-dev
   - redis
+  - openjdk-11-jdk
