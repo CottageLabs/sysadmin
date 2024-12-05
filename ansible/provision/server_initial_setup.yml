@@ -1,5 +1,5 @@
 ## command using IP address -
-# ansible-playbook -i 192.168.1.100, server_initial_setup.yml --e "server_name=test1 git_branch=feature/form_experiment
+# ansible-playbook -i 192.168.1.100, server_initial_setup.yml --e "server_name=test1 install_es=true git_branch=feature/form_experiment
 #      ansible_user=cloo aws_profile=doaj-test-upload aws_access_key=key aws_secret_key=key
 #      aws_secret_id=doaj/test-credentials" --private-key=~/.ssh/id_rsa -vv
 ## command using a specific host or group from your inventory.
@@ -7,7 +7,7 @@
 
 ---
 - name: Setup VM for DOAJ application
-  hosts: all:!index #doaj-editor-1 #
+  hosts: "{{ target if target is defined and target | length > 0 else 'all:!index' }}" #doaj-editor-1 #
   gather_facts: yes
 
   roles:
@@ -15,9 +15,10 @@
       become: yes
 
   vars:
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
     install_es: false
     server_name: "test" # name of the server/droplet
-    git_branch: "develop" # or "master" or provide at runtime with -e git_branch=...
+    git_branch: "master" # or "master" or provide at runtime with -e git_branch=...
     repo_url: "https://github.com/DOAJ/doaj.git"
     venv_path: "/home/{{ ansible_user }}/doaj/venv"
     destination: "/home/{{ ansible_user }}/doaj"
@@ -28,7 +29,9 @@
     aws_region: "eu-west-2"
     aws_secret_id: "test-credentials"
     domain_name: "{{ server_name + '.doaj.cottagelabs.com' if deploy_env == 'test' else 'doaj.org' }}"
-    supervisor_tasks:
+    app_supervisor_tasks:
+        - doaj
+    background_supervisor_tasks:
         - doaj
         - huey-long-running
         - huey-main
@@ -113,7 +116,7 @@
       ansible.builtin.copy:
         dest: "{{ destination }}/instance.cfg"
         content: |
-          BASE_URL = "http://{{ domain_name }}"
+          BASE_URL = "https://{{ domain_name }}"
           BASE_API_URL = "https://{{ domain_name }}/api/"
         owner: "{{ ansible_user }}"
         group: "{{ ansible_user }}"
@@ -198,12 +201,21 @@
       loop: "{{ supervisor_tasks }}"
       become: yes
 
-    - name: Ensure supervisor knows about our tasks
+    - name: Ensure supervisor knows about our tasks for app server
       community.general.supervisorctl:
         name: "{{ item }}"
         state: present
       loop: "{{ supervisor_tasks }}"
       become: yes
+      when: "'app' in group_names"
+
+    - name: Ensure supervisor knows about our tasks for app server
+      community.general.supervisorctl:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ background_supervisor_tasks }}"
+      become: yes
+      when: "'background' in group_names or deploy_env == 'test'"
 
     - name: Call the install script deploy.sh to install the app
       shell: "{{ destination }}/deploy/deploy.sh {{ deploy_env }}"

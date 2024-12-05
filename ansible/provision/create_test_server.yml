@@ -1,3 +1,6 @@
+#
+# ansible-playbook create_test_server.yml --e "droplet_name=<name> install_es=false git_branch=<git branch> aws_profile=doaj-test aws_access_key=<key> aws_secret_key=<key> aws_scret_id=<id>s" --private-key=~/.ssh/id_rsa -vv
+#
 ---
 - name: Bring up a new DOAJ test server
   hosts: localhost
@@ -53,10 +56,30 @@
         type: A
         name: '{{ dns_prefix }}'
         data: "{{ public_ip }}"
-    
+
     - name: Assign the new droplet to the DOAJ project using doctl
       local_action: ansible.builtin.command doctl projects resources assign f7668431-327e-47d8-9d7e-73e713fe1d4d --resource=do:droplet:{{ droplet_id }}
+
+    - set_fact:
+        remote_host_name: "{{ droplet_name }}"
+
+    - add_host:
+        name: "{{ public_ip }}"
+        groups: test_servers
 
     - name: Output a summary including login command
       ansible.builtin.debug:
         msg: "Test server created: cloo@{{dns_prefix}}.{{dns_domain}} at IP {{public_ip}}"
+
+    - name: Give 7 minutes for the server to be up
+      pause:
+        seconds: 420
+
+- name: Run initial setup
+  import_playbook: server_initial_setup.yml
+  vars:
+    target: "{{ hostvars.localhost.public_ip }}"
+    server_name: "{{ hostvars.localhost.remote_host_name }}"
+    ansible_user: "cloo"
+    install_es: true
+    git_branch: "master"
