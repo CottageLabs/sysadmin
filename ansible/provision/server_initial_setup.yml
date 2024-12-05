@@ -8,11 +8,9 @@
 ---
 - name: Setup VM for DOAJ application
   hosts: all:!index #doaj-editor-1 #
-  gather_facts: no
+  gather_facts: yes
 
   roles:
-    - role: install_roles
-      become: yes
     - role: geerlingguy.certbot
       become: yes
 
@@ -52,44 +50,10 @@
       debug:
         var: ansible_facts
 
-    # ==== Install elasticsearch ====
-    - name: Import the Elasticsearch GPG key
-      become: yes
-      ansible.builtin.apt_key:
-        url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
-        state: present
+    - name: Install elasticsearch
+      include_tasks: tasks/install_elasticsearch.yml
       when: install_es | bool
 
-    - name: Add the Elasticsearch repository
-      become: yes
-      ansible.builtin.apt_repository:
-        repo: "deb https://artifacts.elastic.co/packages/7.x/apt stable main"
-        state: present
-      when: install_es | bool
-
-    - name: Update the apt cache
-      become: yes
-      ansible.builtin.apt:
-        update_cache: yes
-      when: install_es | bool
-
-    - name: Install Elasticsearch 7.10.2
-      become: yes
-      ansible.builtin.apt:
-        name: elasticsearch=7.10.2
-        state: present
-        allow_downgrade: yes
-      when: install_es | bool
-
-    - name: Configure Elasticsearch to start on boot
-      become: yes
-      ansible.builtin.systemd:
-        name: elasticsearch
-        enabled: yes
-        state: started
-      when: install_es | bool
-
-    # ==== ====
     - name: Summarise actions
       debug:
         msg: "Deploying branch {{ git_branch }} on host {{ inventory_hostname }}"

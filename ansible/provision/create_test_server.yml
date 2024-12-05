@@ -4,6 +4,9 @@
   connection: local
   gather_facts: true
 
+  roles:
+    - role: install_roles
+
   vars:
     digitalocean_token: "{{ lookup('ansible.builtin.env', 'DIGITALOCEAN_TOKEN') }}"
     server_config: "{{ lookup('ansible.builtin.file', '../../cloud-init_userdata/doaj-test_cloud-config.txt') }}"

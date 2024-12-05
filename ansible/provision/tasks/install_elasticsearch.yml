@@ -1,0 +1,40 @@
+- name: Check if Elasticsearch is installed
+  shell: "dpkg -l | grep elasticsearch"
+  register: es_check
+  ignore_errors: yes
+
+- name: Import the Elasticsearch GPG key
+  become: yes
+  ansible.builtin.apt_key:
+    url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    state: present
+  when: es_check.rc != 0
+
+- name: Add the Elasticsearch repository
+  become: yes
+  ansible.builtin.apt_repository:
+    repo: "deb https://artifacts.elastic.co/packages/7.x/apt stable main"
+    state: present
+  when: es_check.rc != 0
+
+- name: Update the apt cache
+  become: yes
+  ansible.builtin.apt:
+    update_cache: yes
+  when: es_check.rc != 0
+
+- name: Install Elasticsearch 7.10.2
+  become: yes
+  ansible.builtin.apt:
+    name: elasticsearch=7.10.2
+    state: present
+    allow_downgrade: yes
+  when: es_check.rc != 0
+
+- name: Configure Elasticsearch to start on boot
+  become: yes
+  ansible.builtin.systemd:
+    name: elasticsearch
+    enabled: yes
+    state: started
+  when: es_check.rc != 0
