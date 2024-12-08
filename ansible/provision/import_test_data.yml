@@ -1,0 +1,12 @@
+---
+- name: Import index data to elasticsearch
+  hosts: "{{ target if target is defined and target | length > 0 else 'all:!index' }}" #doaj-editor-1 #
+  gather_facts: yes
+
+  vars:
+    ansible_user: "cloo"
+
+  tasks:
+    - name: Run Python script in a screen session
+      shell: |
+        screen -dmS import_data bash -c 'cd /home/{{ansible_user}}/doaj && export DOAJENV="test" && echo DOAJENV $DOAJENV && source /home/{{ansible_user}}/doaj/venv/bin/activate && python3 portality/scripts/anon_import.py data_import_settings/test_server.json > /home/cloo/output.log 2>&1 && exec bash'

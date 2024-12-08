@@ -83,3 +83,9 @@
     ansible_user: "cloo"
     install_es: true
     git_branch: "master"
+
+- name: Import Test data
+  import_playbook: import_test_data.yml
+  vars:
+    target: "{{ hostvars.localhost.public_ip }}"
+    ansible_user: "cloo"
