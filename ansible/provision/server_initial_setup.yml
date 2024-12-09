@@ -200,6 +200,16 @@
         state: link
       loop: "{{ supervisor_tasks }}"
       become: yes
+      when: "'app' in group_names"
+
+    - name: Create symlinks for supervisor
+      ansible.builtin.file:
+        src: "{{ destination }}/deploy/supervisor/{{ deploy_env }}/{{ item + '.conf'}}"
+        dest: /etc/supervisor/conf.d/{{ item + '.conf' }}
+        state: link
+      loop: "{{ background_supervisor_tasks }}"
+      become: yes
+      when: "'background' in group_names or deploy_env == 'test'"
 
     - name: Ensure supervisor knows about our tasks for app server
       community.general.supervisorctl:
