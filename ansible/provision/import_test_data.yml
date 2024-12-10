@@ -9,4 +9,6 @@
   tasks:
     - name: Run Python script in a screen session
       shell: |
-        screen -dmS import_data bash -c 'cd /home/{{ansible_user}}/doaj && export DOAJENV="test" && echo DOAJENV $DOAJENV && source /home/{{ansible_user}}/doaj/venv/bin/activate && python3 portality/scripts/anon_import.py data_import_settings/test_server.json > /home/cloo/output.log 2>&1 && exec bash'
+        screen -L -Logfile /home/cloo/import_data_screen.log -dmS import_data bash -c 'cd /home/{{ansible_user}}/doaj && export DOAJENV="test" && echo DOAJENV $DOAJENV && source /home/{{ansible_user}}/doaj/venv/bin/activate  && python3 portality/scripts/anon_import.py data_import_settings/test_server.json > /home/cloo/anon_import_output.log 2>&1 && echo "Completed" && exec bash'
+      environment:
+        TERM: xterm
