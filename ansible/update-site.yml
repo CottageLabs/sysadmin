@@ -10,7 +10,7 @@
       git:
         repo: https://github.com/DOAJ/doaj.git
         dest: /home/cloo/doaj/src/doaj
-        version: master
+        version: master_py3.8
         update: yes
         clone: no
         force: no
