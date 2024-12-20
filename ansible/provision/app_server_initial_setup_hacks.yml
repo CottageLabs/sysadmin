@@ -59,7 +59,7 @@
         repo: "{{ repo_url }}"
         dest: "{{ destination }}"
         version: "{{ git_branch }}"
-        depth: 1
+        clone: yes
         force: yes
       register: git_result
 

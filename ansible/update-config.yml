@@ -7,4 +7,4 @@
 - hosts: app
   tasks:
     - name: Run the service deploy script to get the config then restart
-      shell: /home/cloo/doaj/src/doaj/deploy/deploy.sh production
+      shell: /home/cloo/doaj/deploy/deploy.sh production

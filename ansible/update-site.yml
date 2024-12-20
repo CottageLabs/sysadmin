@@ -9,15 +9,15 @@
     - name: Pull latest master from doaj GitHub
       git:
         repo: https://github.com/DOAJ/doaj.git
-        dest: /home/cloo/doaj/src/doaj
-        version: master_py3.8
+        dest: /home/cloo/doaj
+        version: master
         update: yes
-        clone: no
+        clone: yes
         force: no
       register: code_updated
 
 - hosts: app
   tasks:
     - name: Run the service deploy script if there were code changes
-      shell: /home/cloo/doaj/src/doaj/deploy/deploy.sh production
+      shell: /home/cloo/doaj/deploy/deploy.sh production
       when: code_updated.changed

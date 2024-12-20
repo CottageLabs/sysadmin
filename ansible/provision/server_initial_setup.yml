@@ -76,7 +76,7 @@
         repo: "{{ repo_url }}"
         dest: "{{ destination }}"
         version: "{{ git_branch }}"
-        depth: 1
+        clone: yes
         force: yes
       register: git_result
 
@@ -111,6 +111,9 @@
         - failed_articles
         - cache
 
+    # TODO in production background we need to add the Google Sheets API secret credential to appdata folder
+    # e.g. /home/cloo/appdata/doaj/doaj-412010-6486beb55e50.json
+
     - name: Create instance config file
       ansible.builtin.copy:
         dest: "{{ destination }}/instance.cfg"
@@ -139,9 +142,12 @@
       become: true
       command: cp {{ destination }}/deploy/logrotate/doaj-analytics /etc/logrotate.d/doaj-analytics
 
-    - name: Copy nginx config file
+      # TODO symlink /root/.aws to /home/cloo/.aws so that root can upload to S3 via logrotate cron job
+
+    - name: Copy nginx config file (test)
       become: true
       command: cp {{ destination }}/deploy/nginx/{{deploy_env}}/doaj /etc/nginx/sites-available/{{domain_name}}
+      when: deploy_env == "test"
 
     - name: Update nginx file
       become: true
@@ -151,12 +157,22 @@
         replace: "{{ domain_name }}"
       when: deploy_env == "test"
 
+    - name: Create symlink from our code to nginx sites-available (production)
+      become: yes
+      ansible.builtin.file:
+        src: "{{ destination }}/deploy/nginx/{{deploy_env}}/doaj"
+        dest: /etc/nginx/sites-available/{{ domain_name }}
+        state: link
+      when: deploy_env == "production"
+
     - name: Create symlink for nginx
       become: yes
       ansible.builtin.file:
         src: /etc/nginx/sites-available/{{ domain_name }}
         dest: /etc/nginx/sites-enabled/{{ domain_name }}
         state: link
+
+  # TODO disable the default nginx symlink
 
     - name: Create symlink for nginx redirects
       become: yes
