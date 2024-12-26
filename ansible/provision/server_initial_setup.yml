@@ -111,8 +111,7 @@
         - failed_articles
         - cache
 
-    # TODO in production background we need to add the Google Sheets API secret credential to appdata folder
-    # e.g. /home/cloo/appdata/doaj/doaj-412010-6486beb55e50.json
+    # adding the Google Sheets API secret credential to appdata folder will be done in deploy.sh through aws secrets
 
     - name: Create instance config file
       ansible.builtin.copy:
@@ -142,7 +141,12 @@
       become: true
       command: cp {{ destination }}/deploy/logrotate/doaj-analytics /etc/logrotate.d/doaj-analytics
 
-      # TODO symlink /root/.aws to /home/cloo/.aws so that root can upload to S3 via logrotate cron job
+    - name: Create a symlink for .aws
+      file:
+        src: /home/cloo/.aws
+        dest: /root/.aws
+        state: link
+      become: yes
 
     - name: Copy nginx config file (test)
       become: true
@@ -172,7 +176,11 @@
         dest: /etc/nginx/sites-enabled/{{ domain_name }}
         state: link
 
-  # TODO disable the default nginx symlink
+    - name: Remove the symbolic link for default
+      become: yes
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
 
     - name: Create symlink for nginx redirects
       become: yes
@@ -184,7 +192,7 @@
     - name: Add www-data user to the user group
       ansible.builtin.user:
         name: www-data
-        groups: 
+        groups:
           - "{{ ansible_user }}"
         append: yes
       become: yes
@@ -216,16 +224,25 @@
         state: link
       loop: "{{ app_supervisor_tasks }}"
       become: yes
-      when: "'app' in group_names"
+      when: "'app' in group_names or deploy_env == 'test'"
 
-    - name: Create symlinks for supervisor
+    - name: Create symlinks for supervisor for background tasks
       ansible.builtin.file:
         src: "{{ destination }}/deploy/supervisor/{{ deploy_env }}-background/{{ item + '.conf'}}"
         dest: /etc/supervisor/conf.d/{{ item + '.conf' }}
         state: link
       loop: "{{ background_supervisor_tasks }}"
       become: yes
-      when: "'background' in group_names or deploy_env == 'test'"  # FIXME separate test and background since this breaks the directory pattern
+      when: "'background' in group_names"
+
+    - name: Create symlinks for supervisor for test server
+      ansible.builtin.file:
+        src: "{{ destination }}/deploy/supervisor/{{ deploy_env }}/{{ item + '.conf'}}"
+        dest: /etc/supervisor/conf.d/{{ item + '.conf' }}
+        state: link
+      loop: "{{ background_supervisor_tasks }}"
+      become: yes
+      when: "deploy_env == 'test'"
 
     - name: Ensure supervisor knows about our tasks for app server
       community.general.supervisorctl:
@@ -233,7 +250,7 @@
         state: present
       loop: "{{ app_supervisor_tasks }}"
       become: yes
-      when: "'app' in group_names"
+      when: "'app' in group_names  or deploy_env == 'test'"
 
     - name: Ensure supervisor knows about our tasks for app server
       community.general.supervisorctl:
