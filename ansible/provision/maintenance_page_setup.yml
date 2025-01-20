@@ -1,0 +1,120 @@
+## command using IP address -
+# ansible-playbook -i 192.168.1.100, maintenance_page_setup.yml --e "server_name=test1 git_branch=master
+#      ansible_user=cloo" --private-key=~/.ssh/id_rsa -vv
+## command using a specific host or group from your inventory.
+# ansible-playbook -i doaj-hosts.ini server_initial_setup.yml --limit "hostname_or_ip" -e "git_branch=feature/new-feature"
+
+---
+- name: Setup VM for DOAJ maintenance page
+  hosts: "{{ target if target is defined and target | length > 0 else 'all:!index' }}" #doaj-editor-1 #
+  gather_facts: yes
+
+  roles:
+    - role: geerlingguy.certbot
+      become: yes
+
+  vars:
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+    server_name: "maintenance" # name of the server/droplet
+    git_branch: "HEAD" # or "master" or provide at runtime with -e git_branch=...
+    repo_url: "https://github.com/DOAJ/maintenance_page.git"
+    src_destination: "/var/www/maintenance_page"
+    repo_destination: "/home/{{ ansible_user }}/maintenance_page.git"
+    domain_name: "{{ server_name + '.doaj.cottagelabs.com'}}"
+    certbot_create_standalone_stop_services:
+      - nginx
+    certbot_create_extra_args: ""
+    certbot_create_if_missing: true
+    certbot_certs:
+      - domains:
+          - "{{ domain_name }}"
+        email: sysadmin@cottagelabs.com
+        state: present
+
+  tasks:
+    - name: Debug all available facts
+      debug:
+        var: ansible_facts
+
+    - name: Summarise actions
+      debug:
+        msg: "Deploying branch {{ git_branch }} on host {{ inventory_hostname }}"
+
+    - name: Ensure git and nginx are installed
+      apt:
+        name:
+          - git
+          - nginx
+        state: present
+        update_cache: yes
+      become: yes
+    
+    - name: Add user www-data to the user's group to read its files
+      ansible.builtin.user:
+        name: www-data
+        groups:
+          - "{{ ansible_user }}"
+        append: yes
+      become: yes
+
+    - name: Allow user to create directories in /var/www
+      ansible.builtin.file:
+        path: /var/www
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+      become: yes
+
+    - name: Clone the repo with a separate git directory
+      ansible.builtin.git:
+        repo: "{{ repo_url }}"
+        dest: "{{ src_destination }}"
+        separate_git_dir: "{{ repo_destination }}"
+        clone: yes
+        force: yes
+
+    - name: Reinstate owner of /var/www
+      ansible.builtin.file:
+        path: /var/www
+        state: directory
+        owner: root
+        group: root
+      become: yes
+
+    - name: Create symlink for the git hook to deploy on push
+      ansible.builtin.file:
+        src: "{{ src_destination }}/deploy/hooks/post-receive"
+        dest: "{{ repo_destination }}/hooks/post-receive"
+        state: link
+        mode: "0755"
+
+    - name: Copy nginx config file
+      become: true
+      command: cp {{ src_destination }}/deploy/nginx/doaj_maintenance /etc/nginx/sites-available/{{domain_name}}
+
+    - name: Update nginx file
+      become: true
+      replace:
+        path: /etc/nginx/sites-available/{{ domain_name }}
+        regexp: "doaj\\.org"
+        replace: "{{ domain_name }}"
+
+    - name: Create symlink for nginx
+      become: yes
+      ansible.builtin.file:
+        src: /etc/nginx/sites-available/{{ domain_name }}
+        dest: /etc/nginx/sites-enabled/{{ domain_name }}
+        state: link
+
+    - name: Remove the symbolic link for nginx default config
+      become: yes
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+    - name: Restart nginx process
+      ansible.builtin.service: name=nginx state=restarted
+      become: yes
+
+    - name: Configure git to allow us to overwrite checked-out master
+      ansible.builtin.command: git config --global receive.denyCurrentBranch ignore

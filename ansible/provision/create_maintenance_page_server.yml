@@ -1,8 +1,8 @@
 #
-# ansible-playbook create_test_server.yml --e "droplet_name=<name> install_es=false git_branch=<git branch> aws_profile=doaj-test aws_access_key=<key> aws_secret_key=<key> aws_scret_id=<id>" --private-key=~/.ssh/id_rsa -vv
+# ansible-playbook create_maintenance_page_server.yml --e "droplet_name=<name> git_branch=<git branch>" --private-key=~/.ssh/id_rsa -vv
 #
 ---
-- name: Bring up a new DOAJ test server
+- name: Bring up a new DOAJ maintenance page server
   hosts: localhost
   connection: local
   gather_facts: true
@@ -12,22 +12,21 @@
 
   vars:
     digitalocean_token: "{{ lookup('ansible.builtin.env', 'DIGITALOCEAN_TOKEN') }}"
-    server_config: "{{ lookup('ansible.builtin.file', '../../cloud-init_userdata/doaj-test_cloud-config.txt') }}"
-    droplet_name: test1
+    server_config: "{{ lookup('ansible.builtin.file', '../../cloud-init_userdata/doaj-app_cloud-config.txt') }}"
+    droplet_name: maintenance
     dns_prefix: '{{ droplet_name }}'
     dns_domain: doaj.cottagelabs.com
   
   tasks:
 
-    - name: Create Droplet with root access Steve and Rama, using test server userdata
+    - name: Create Droplet with root access Steve and Rama, using app server userdata
       digitalocean.cloud.droplet:
         state: present
         token: "{{ digitalocean_token }}"
         name: '{{droplet_name}}'
         region: lon1
-        size: s-4vcpu-8gb
+        size: s-2vcpu-4gb
         tags:
-          - doaj-test
           - firewall-web-ssh
         image: ubuntu-22-04-x64
         # Run task list_ssh_keys.yml to get the key IDs
@@ -65,27 +64,20 @@
 
     - add_host:
         name: "{{ public_ip }}"
-        groups: test_servers
+        groups: app_servers
 
     - name: Output a summary including login command
       ansible.builtin.debug:
-        msg: "Test server created: cloo@{{dns_prefix}}.{{dns_domain}} at IP {{public_ip}}"
+        msg: "Server created: cloo@{{dns_prefix}}.{{dns_domain}} at IP {{public_ip}}"
 
-    - name: Give 7 minutes for the server to be up
+    - name: Give 5 minutes for the server to be up and updated
       pause:
-        seconds: 420
+        seconds: 300
 
 - name: Run initial setup
-  import_playbook: server_initial_setup.yml
+  import_playbook: maintenance_page_setup.yml
   vars:
     target: "{{ hostvars.localhost.public_ip }}"
     server_name: "{{ hostvars.localhost.remote_host_name }}"
     ansible_user: "cloo"
-    install_es: true
     git_branch: "master"
-
-- name: Import Test data
-  import_playbook: import_test_data.yml
-  vars:
-    target: "{{ hostvars.localhost.public_ip }}"
-    ansible_user: "cloo"

@@ -1,5 +1,5 @@
 #
-# ansible-playbook create_test_server.yml --e "droplet_name=<name> install_es=false git_branch=<git branch> aws_profile=doaj-test aws_access_key=<key> aws_secret_key=<key> aws_scret_id=<id>" --private-key=~/.ssh/id_rsa -vv
+# ansible-playbook create_static_server.yml --e "droplet_name=<name> install_es=false git_branch=<git branch> aws_profile=doaj-test aws_access_key=<key> aws_secret_key=<key> aws_scret_id=<id>s" --private-key=~/.ssh/id_rsa -vv
 #
 ---
 - name: Bring up a new DOAJ test server
@@ -13,7 +13,7 @@
   vars:
     digitalocean_token: "{{ lookup('ansible.builtin.env', 'DIGITALOCEAN_TOKEN') }}"
     server_config: "{{ lookup('ansible.builtin.file', '../../cloud-init_userdata/doaj-test_cloud-config.txt') }}"
-    droplet_name: test1
+    droplet_name: static
     dns_prefix: '{{ droplet_name }}'
     dns_domain: doaj.cottagelabs.com
   
@@ -25,7 +25,7 @@
         token: "{{ digitalocean_token }}"
         name: '{{droplet_name}}'
         region: lon1
-        size: s-4vcpu-8gb
+        size: s-2vcpu-4gb
         tags:
           - doaj-test
           - firewall-web-ssh
@@ -82,7 +82,7 @@
     server_name: "{{ hostvars.localhost.remote_host_name }}"
     ansible_user: "cloo"
     install_es: true
-    git_branch: "master"
+    git_branch: "static_pages"
 
 - name: Import Test data
   import_playbook: import_test_data.yml
