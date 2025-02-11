@@ -20,6 +20,10 @@ Then e.g. create the maintenance page server:
 
     ansible-playbook create_maintenance_page_server.yml --private-key=~/.ssh/cl_ed25519
 
+Destroy a test server instance:
+
+    ansible-playbook destroy_test_server.yml --e "droplet_name=training"
+
 It can also be handy to use the yaml output callback for readability. Example command:
 
     ANSIBLE_STDOUT_CALLBACK=yaml ansible-playbook -i localhost, -c local create_app_server.yml -v

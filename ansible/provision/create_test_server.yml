@@ -73,7 +73,7 @@
 
     - name: Give 7 minutes for the server to be up
       pause:
-        seconds: 420
+        minutes: 7
 
 - name: Run initial setup
   import_playbook: server_initial_setup.yml
@@ -83,6 +83,13 @@
     ansible_user: "cloo"
     install_es: true
     git_branch: "master"
+
+- name: Give a minute for the app to stabilise
+  hosts: localhost
+  tasks:
+    - name: Waiting...
+      pause:
+        minutes: 1
 
 - name: Import Test data
   import_playbook: import_test_data.yml
