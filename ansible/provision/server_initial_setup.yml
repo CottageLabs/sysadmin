@@ -262,3 +262,5 @@
 
     - name: Call the install script deploy.sh to install the app
       shell: "{{ destination }}/deploy/deploy.sh {{ deploy_env }}"
+      args:
+        chdir: "{{ destination }}"
