@@ -12,7 +12,7 @@
         name: metricbeat
       become: yes
 
-- hosts: doaj-public-app-1
+- hosts: doaj-public-1
   tasks:
     - name: Reboot filebeat on the primary app server
       systemd:
