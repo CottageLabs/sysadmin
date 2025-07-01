@@ -1,5 +1,5 @@
 #cloud-config
-## Add and configure new user cloo, authorized keys for steve, anusha and hrafn
+## Add and configure new user cloo, authorized keys for steve and hrafn
 groups:
   - docker
 
@@ -31,7 +31,6 @@ packages:
   - ncdu
   - tree
   - gcc
-  - nginx
   - apache2-utils
   - python3-dev
   - python3-pip
@@ -41,7 +40,7 @@ packages:
   - pipenv
   - pipx
   - rng-tools
-  - docker
+  - docker.io
   - docker-compose-v2
   - nodejs
   - npm

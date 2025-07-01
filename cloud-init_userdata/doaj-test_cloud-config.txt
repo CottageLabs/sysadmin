@@ -29,6 +29,7 @@ packages:
   - screen
   - htop
   - tree
+  - ncdu
   - python3-dev
   - python3-pip
   - gcc
