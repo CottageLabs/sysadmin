@@ -28,9 +28,9 @@
     - name: Get Java version
       shell:
         cmd: java -version 2>&1 | grep 'version'
-        warn: no
       register: java_version
       changed_when: false
+      ignore_errors: true
 
     - name: Set Java version message
       set_fact:
