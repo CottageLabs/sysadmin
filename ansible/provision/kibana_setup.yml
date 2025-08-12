@@ -1,0 +1,75 @@
+## command using IP address -
+# ansible-playbook -i 192.168.1.100, server_initial_setup.yml --e "server_name=test1 install_es=true git_branch=feature/form_experiment
+#      ansible_user=cloo aws_profile=doaj-test-upload aws_access_key=key aws_secret_key=key
+#      aws_secret_id=doaj/test-credentials" --private-key=~/.ssh/id_rsa -vv
+## command using a specific host or group from your inventory.
+# ansible-playbook -i doaj-hosts.ini server_initial_setup.yml --limit "hostname_or_ip" -e "git_branch=feature/new-feature"
+
+---
+- name: Setup VM for Kibana
+  hosts: "{{ target if target is defined and target | length > 0 }}"
+  gather_facts: yes
+
+  roles:
+    - role: geerlingguy.certbot
+      become: yes
+
+  vars:
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+    install_es: false
+    server_name: "kibana" # name of the server/droplet
+    domain_name: "{{ server_name + '.doaj.cottagelabs.com' }}"
+    certbot_create_standalone_stop_services:
+      - nginx
+    certbot_create_extra_args: ""
+    certbot_create_if_missing: true
+    certbot_certs:
+      - domains:
+          - "{{ domain_name }}"
+        email: sysadmin@cottagelabs.com
+        state: present
+
+  tasks:
+    - name: Debug all available facts
+      debug:
+        var: ansible_facts
+
+#    - name: Install elasticsearch
+#      include_tasks: tasks/install_elasticsearch.yml
+#      when: install_es | bool
+
+    - name: Ensure Python3, supervisor, and Git are installed
+      apt:
+        name:
+          - python3
+          - supervisor
+        state: present
+        update_cache: yes
+      become: yes
+
+#    - name: Install Kibana
+#      become: yes
+#      apt:
+#        name: kibana=7.10.2
+#        state: present
+
+    - name: Configure Kibana to start on boot
+      become: yes
+      systemd:
+        name: kibana
+        enabled: yes
+        state: started
+
+    - name: Ensure Elasticsearch is running
+      become: yes
+      systemd:
+        name: elasticsearch
+        state: started
+        enabled: true
+
+    - name: Ensure Kibana is running
+      become: yes
+      systemd:
+        name: kibana
+        state: started
+        enabled: true

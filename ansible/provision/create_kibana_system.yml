@@ -1,0 +1,83 @@
+#
+# ansible-playbook create_kibana_system.yml --e "droplet_name=<name>" --private-key=~/.ssh/id_rsa -vv
+#
+---
+- name: Bring up a new DOAJ test server
+  hosts: localhost
+  connection: local
+  gather_facts: true
+
+  roles:
+    - role: install_roles
+
+  vars:
+    digitalocean_token: "{{ lookup('ansible.builtin.env', 'DIGITALOCEAN_TOKEN') }}"
+    server_config: "{{ lookup('ansible.builtin.file', '../../cloud-init_userdata/doaj-test_cloud-config.txt') }}"
+    droplet_name: Kibana
+    dns_prefix: '{{ droplet_name }}'
+    dns_domain: doaj.cottagelabs.com
+  
+  tasks:
+
+    - name: Create Droplet with root access Steve and Rama
+      digitalocean.cloud.droplet:
+        state: present
+        token: "{{ digitalocean_token }}"
+        name: '{{droplet_name}}'
+        region: lon1
+        size: s-4vcpu-8gb
+        tags:
+          - doaj
+        image: ubuntu-22-04-x64
+        # Run task list_ssh_keys.yml to get the key IDs
+        ssh_keys: ["30242381", "40223915"]
+        ipv6: true
+        unique_name: true
+        monitoring: true
+        backups: false
+        with_droplet_agent: true
+        user_data: "{{ server_config }}"
+
+    - name: Get info on our new droplet to get the IP
+      digitalocean.cloud.droplets_info:
+        name: '{{droplet_name}}'
+      register: dropletinfo
+
+    - name: Parse out the assigned IP
+      ansible.builtin.set_fact:
+        public_ip: "{{ dropletinfo['droplets'][0]['networks']['v4'] | selectattr('type', '==', 'public') | map(attribute='ip_address') | first }}"
+        droplet_id: "{{ dropletinfo['droplets'][0]['id'] }}"
+
+    - name: Create domain A record
+      digitalocean.cloud.domain_record:
+        token: "{{ digitalocean_token }}"
+        domain_name: '{{ dns_domain }}'
+        type: A
+        name: '{{ dns_prefix }}'
+        data: "{{ public_ip }}"
+
+    - name: Assign the new droplet to the DOAJ project using doctl
+      local_action: ansible.builtin.command doctl projects resources assign f7668431-327e-47d8-9d7e-73e713fe1d4d --resource=do:droplet:{{ droplet_id }}
+
+    - set_fact:
+        remote_host_name: "{{ droplet_name }}"
+
+    - add_host:
+        name: "{{ public_ip }}"
+        groups: kibana
+
+    - name: Output a summary including login command
+      ansible.builtin.debug:
+        msg: "Kibana system created: cloo@{{dns_prefix}}.{{dns_domain}} at IP {{public_ip}}"
+
+    - name: Give 7 minutes for the server to be up
+      pause:
+        minutes: 7
+
+- name: setup kibana
+  import_playbook: kibana_setup.yml
+  vars:
+    target: "{{ hostvars.localhost.public_ip }}"
+    server_name: "{{ hostvars.localhost.remote_host_name }}"
+    ansible_user: "cloo"
+    install_es: true
