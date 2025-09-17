@@ -1,0 +1,116 @@
+- name: Bring up a new DOAJ load balancer server
+  hosts: localhost
+  connection: local
+  gather_facts: true
+
+  vars:
+    digitalocean_token: "{{ lookup('ansible.builtin.env', 'DIGITALOCEAN_TOKEN') }}"
+    server_config: "{{ lookup('ansible.builtin.file', '../../cloud-init_userdata/doaj-app_cloud-config.txt') }}"
+    droplet_name: doaj-lb
+    dns_prefix: loadbalancer
+    dns_domain: doaj.cottagelabs.com
+
+  tasks:
+
+    - name: Create Droplet with root access Steve and Rama, using the same server userdata as apps
+      digitalocean.cloud.droplet:
+        state: present
+        token: "{{ digitalocean_token }}"
+        name: '{{droplet_name}}'
+        region: lon1
+        #Slug          Description        Memory     VCPUs    Disk    Price Monthly
+        #c-2           CPU-Optimized      4096       2        25      42.00
+        size: c-2
+        tags:
+          - doaj
+          - firewall-doaj-app
+        image: ubuntu-22-04-x64
+        # Run task list_ssh_keys.yml to get the key IDs
+        ssh_keys: ["30242381", "40223915"]
+        ipv6: true
+        unique_name: true
+        monitoring: true
+        backups: false
+        with_droplet_agent: true
+        user_data: "{{ server_config }}"
+
+    - name: Get info on our new droplet to get the IP
+      digitalocean.cloud.droplets_info:
+        name: '{{droplet_name}}'
+      register: dropletinfo
+
+    - name: Parse out the assigned IP
+      ansible.builtin.set_fact:
+        public_ip: "{{ dropletinfo['droplets'][0]['networks']['v4'] | selectattr('type', '==', 'public') | map(attribute='ip_address') | first }}"
+        droplet_id: "{{ dropletinfo['droplets'][0]['id'] }}"
+
+    - name: Create domain A record
+      digitalocean.cloud.domain_record:
+        token: "{{ digitalocean_token }}"
+        domain_name: '{{ dns_domain }}'
+        type: A
+        name: '{{ dns_prefix }}'
+        data: "{{ public_ip }}"
+
+    - name: Assign the new droplet to the DOAJ project using doctl
+      local_action: ansible.builtin.command doctl projects resources assign f7668431-327e-47d8-9d7e-73e713fe1d4d --resource=do:droplet:{{ droplet_id }}
+
+    - name: Output a summary including login command
+      ansible.builtin.debug:
+        msg: "App server created: cloo@{{public_ip}}"
+
+    - set_fact:
+        remote_host_name: "{{ droplet_name }}"
+
+    - add_host:
+        name: "{{ public_ip }}"
+        groups: load_balancer
+
+    - name: Give 7 minutes for the server to be up
+      pause:
+        minutes: 7
+
+- name: Run initial setup - only copy the repo to the machine and run nginx
+  import_playbook: server_initial_setup.yml
+  vars:
+    target: "{{ hostvars.localhost.public_ip }}"
+    server_name: "{{ hostvars.localhost.remote_host_name }}"
+    certbot_domain: loadbalancer.doaj.cottagelabs.com
+    ansible_user: "cloo"
+    install_es: false
+    git_branch: "master"
+    deploy_env: production
+
+- name: Perform load balancer tasks - nginx logs credentials, cleanup
+  hosts: load_balancer
+  gather_facts: false
+  vars:
+    ansible_user: "cloo"
+    aws_profile_2: "another_aws_profile"
+    aws_access_key_2: "access_key"
+    aws_secret_key_2: "secret_key"
+  tasks:
+    - name: Delete the newly-created instance cfg file, only used for test servers
+      ansible.builtin.file:
+        state: absent
+        path: "/home/{{ ansible_user }}/doaj/instance.cfg"
+
+    - name: Append AWS log creds to credentials file
+      ansible.builtin.blockinfile:
+        path: "/home/{{ ansible_user }}/.aws/credentials"
+        insertafter: EOF
+        block: |
+          [{{aws_profile_2}}]
+          aws_access_key_id = {{ aws_access_key_2 }}
+          aws_secret_access_key = {{ aws_secret_key_2 }}
+        prepend_newline: true
+
+    - name: Append AWS config file for nginx logs
+      ansible.builtin.blockinfile:
+        path: "/home/{{ ansible_user }}/.aws/config"
+        insertafter: EOF
+        block: |
+          [profile {{aws_profile_2}}]
+          output = text
+          region = eu-west-2
+        prepend_newline: true
