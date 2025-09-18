@@ -4,7 +4,7 @@
     - name: Ping all production hosts to check we're fully up and running
       ping:
 
-- hosts: app
+- hosts: app:loadbalancer
   tasks:
     - name: Pull latest master from doaj GitHub
       git:
@@ -16,7 +16,7 @@
         force: no
       register: code_updated
 
-- hosts: app
+- hosts: app:loadbalancer
   tasks:
     - name: Run the service deploy script if there were code changes
       shell: /home/cloo/doaj/deploy/deploy.sh production
