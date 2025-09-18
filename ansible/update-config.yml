@@ -4,7 +4,7 @@
     - name: Ping all production hosts to check we're fully up and running
       ping:
 
-- hosts: app
+- hosts: app:loadbalancer
   tasks:
     - name: Run the service deploy script to get the config then restart
       shell: /home/cloo/doaj/deploy/deploy.sh production
