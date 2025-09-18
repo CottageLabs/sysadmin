@@ -7,10 +7,11 @@
   vars:
     digitalocean_token: "{{ lookup('ansible.builtin.env', 'DIGITALOCEAN_TOKEN') }}"
     server_config: "{{ lookup('ansible.builtin.file', '../../cloud-init_userdata/doaj-app_cloud-config.txt') }}"
-    droplet_name: doaj-public-1
-    #droplet_name: doaj-background-1
-    #droplet_name: doaj-editor-1
-  
+    droplet_name: doaj-public-2
+    # We initially want this server accessible via public2.doaj.cottagelabs.com
+    dns_prefix: public-2
+    dns_domain: doaj.cottagelabs.com
+
   tasks:
 
     - name: Create Droplet with root access Steve and Rama, using app server userdata
@@ -19,8 +20,8 @@
         token: "{{ digitalocean_token }}"
         name: '{{droplet_name}}'
         region: lon1
-        size: c-4
-        #size: s-4vcpu-8gb
+        #size: c-4   # 4 CPUs optimised
+        size: s-4vcpu-8gb   # 4 CPUs general purpose
         #size: s-2vcpu-4gb
         tags:
           - doaj
@@ -44,10 +45,40 @@
       ansible.builtin.set_fact:
         public_ip: "{{ dropletinfo['droplets'][0]['networks']['v4'] | selectattr('type', '==', 'public') | map(attribute='ip_address') | first }}"
         droplet_id: "{{ dropletinfo['droplets'][0]['id'] }}"
-    
+
+    - name: Create domain A record
+      digitalocean.cloud.domain_record:
+        token: "{{ digitalocean_token }}"
+        domain_name: '{{ dns_domain }}'
+        type: A
+        name: '{{ dns_prefix }}'
+        data: "{{ public_ip }}"
+
     - name: Assign the new droplet to the DOAJ project using doctl
       local_action: ansible.builtin.command doctl projects resources assign f7668431-327e-47d8-9d7e-73e713fe1d4d --resource=do:droplet:{{ droplet_id }}
+
+    - set_fact:
+        remote_host_name: "{{ droplet_name }}"
+
+    - add_host:
+        name: "{{ public_ip }}"
+        groups: app
 
     - name: Output a summary including login command
       ansible.builtin.debug:
         msg: "App server created: cloo@{{public_ip}}"
+
+    - name: Give 7 minutes for the server to be up
+      pause:
+        minutes: 7
+
+- name: Run initial setup
+  import_playbook: server_initial_setup.yml
+  vars:
+    target: "{{ hostvars.localhost.public_ip }}"
+    server_name: "{{ hostvars.localhost.remote_host_name }}"
+    certbot_domain: public-2.doaj.cottagelabs.com
+    ansible_user: "cloo"
+    install_es: false
+    git_branch: "master"
+    deploy_env: production
