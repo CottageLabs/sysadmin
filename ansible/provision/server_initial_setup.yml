@@ -184,7 +184,27 @@
         dest: /etc/nginx/sites-enabled/{{ domain_name }}
         state: link
 
-    - name: Remove the symbolic link for default
+    - name: Always restart nginx via systemctl, create directory
+      become: yes
+      ansible.builtin.file:
+        path: /etc/systemd/system/nginx.service.d/
+        state: directory
+
+    - name: Write systemctl restart policy for nginx
+      copy:
+        dest: /etc/systemd/system/nginx.service.d/restart.conf
+        content: |
+          [Service]
+          Restart=on-failure
+          RestartSec=5s
+        register: restartfile
+
+    - name: Reread systemd configs if we've created the nginx file
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+      when: restartfile is changed
+
+    - name: Remove the nginx symbolic link for default
       become: yes
       file:
         path: /etc/nginx/sites-enabled/default
