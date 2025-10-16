@@ -191,15 +191,17 @@
         state: directory
 
     - name: Write systemctl restart policy for nginx
+      become: yes
       copy:
         dest: /etc/systemd/system/nginx.service.d/restart.conf
         content: |
           [Service]
           Restart=on-failure
           RestartSec=5s
-        register: restartfile
+      register: restartfile
 
     - name: Reread systemd configs if we've created the nginx file
+      become: yes
       ansible.builtin.systemd_service:
         daemon_reload: true
       when: restartfile is changed
