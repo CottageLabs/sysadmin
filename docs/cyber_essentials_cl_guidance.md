@@ -25,6 +25,7 @@ This document provides guidance for developers using their own devices (BYOD) to
 - **Strong Authentication**: Use strong, unique passwords (minimum 12 characters) for all network device admin accounts
 - **Firmware Updates**: Keep router and network equipment firmware updated to latest stable versions
 - **Remote Management**: Disable remote management features unless absolutely necessary
+- **Internet-Facing Management**: Router management interfaces and firewall configuration must NOT be accessible from the internet - management should only be possible from the local network
 - **WPS**: Disable WPS (Wi-Fi Protected Setup) on wireless routers
 - **Guest Networks**: Use separate guest networks for visitors, isolated from business network
 
@@ -76,11 +77,37 @@ This document provides guidance for developers using their own devices (BYOD) to
 
 ## Application Management
 
+### Approved Software Sources and Code Signing
+
+**Mandatory Requirement**: Only signed software from approved sources may be installed on devices accessing company resources.
+
+#### Approved App Stores and Sources
+- **Mobile Devices (iOS/Android)**: Applications must be installed exclusively from:
+  - Apple App Store (iOS devices)
+  - Google Play Store (Android devices)
+- **Desktop/Laptop Computers**: Software must be obtained from:
+  - Official vendor websites with verified digital signatures
+  - Microsoft Store (Windows)
+  - Mac App Store (macOS)
+  - Official distribution repositories (Linux: apt, yum, dnf, etc.)
+- **Browser Extensions**: Only from official browser extension stores (Chrome Web Store, Firefox Add-ons, etc.)
+
+#### Code Signing Verification
+- **Digital Signatures**: All installed software must have valid digital signatures from trusted publishers
+- **Unsigned Software**: Installation of unsigned or self-signed software is prohibited unless explicitly approved by the systems administration team
+- **Verification Process**: Check publisher certificates before installation on desktop systems
+- **Warning Prompts**: Do not bypass operating system warnings about unsigned or untrusted software
+
+#### Prohibited Sources
+- **Third-party App Stores**: No sideloading or alternative app stores (e.g., APK files from websites)
+- **Pirated Software**: Use of unlicensed or pirated software is strictly forbidden
+- **Unverified Downloads**: Software from file-sharing sites, torrents, or unofficial mirrors
+- **Modified Software**: Repackaged or modified versions of official applications
+
 ### Software Installation
-- **Approved Sources**: Install software only from official vendor websites or app stores
-- **Verification**: Verify software authenticity using digital signatures where available
 - **Business Need**: Only install applications necessary for work purposes
 - **Regular Review**: Monthly review of installed applications
+- **Installation Approval**: When in doubt about a software source, consult with the systems administration team before installation
 
 ### Application Maintenance
 - **Unused Software**: Uninstall applications that are no longer needed
