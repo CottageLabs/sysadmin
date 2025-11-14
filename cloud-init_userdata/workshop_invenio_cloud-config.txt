@@ -1,0 +1,59 @@
+#cloud-config
+## Add and configure new user repo, authorized keys for steve, hrafn, and anusha
+groups:
+  - docker
+
+users:
+  - name: repo
+    ssh-authorized-keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAFb1SNKeovfTz1JXrok00+s6YREBlgKFlrDEYh7Dh+D steve@cottagelabs.com
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP1IbOCzPJCBBQcDsutoUB3vHzYZ7bIKbNmeeiXW8DWx hrafn@cottagelabs.com
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEYTmr8Il/pVEkBtj947bawsMlRwGjvrTVRTQQIYRySN anusha@cottagelabs.com
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    groups: sudo, docker
+    shell: /bin/bash
+
+## Disable password authentication with the SSH daemon
+ssh_pwauth: false
+
+## Update apt database and upgrade packages on first boot
+package_update: true
+package_upgrade: true
+
+## Install additional useful packages on first boot (extend and delete as required)
+packages:
+  - git
+  - curl
+  - wget
+  - nmap
+  - net-tools
+  - screen
+  - htop
+  - ncdu
+  - tree
+  - gcc
+  - apache2-utils
+  - python3-dev
+  - python3-pip
+  - python3-distutils
+  - python3-virtualenv
+  - python3-certbot-nginx
+  - pipenv
+  - pipx
+  - rng-tools
+  - docker.io
+  - docker-compose-v2
+  - nodejs
+  - npm
+  - vim
+  - imagemagick
+
+runcmd:
+  - # Install nvm as cloo
+    su - repo -c "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash"
+
+  - # Install node 18 for InvenioRDM
+    su - repo -c '. /home/cloo/.nvm/nvm.sh && nvm install v18.20.8'
+
+  - # Install invenio-cli
+    su - repo -c 'pipx install invenio-cli'
