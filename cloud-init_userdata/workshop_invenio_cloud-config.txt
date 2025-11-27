@@ -4,7 +4,7 @@ groups:
   - docker
 
 users:
-  - name: repo
+  - name: cloo
     ssh-authorized-keys:
       - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAFb1SNKeovfTz1JXrok00+s6YREBlgKFlrDEYh7Dh+D steve@cottagelabs.com
       - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP1IbOCzPJCBBQcDsutoUB3vHzYZ7bIKbNmeeiXW8DWx hrafn@cottagelabs.com
@@ -50,10 +50,10 @@ packages:
 
 runcmd:
   - # Install nvm as cloo
-    su - repo -c "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash"
+    su - cloo -c "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash"
 
   - # Install node 18 for InvenioRDM
-    su - repo -c '. /home/cloo/.nvm/nvm.sh && nvm install v18.20.8'
+    su - cloo -c '. /home/cloo/.nvm/nvm.sh && nvm install v18.20.8'
 
   - # Install invenio-cli
-    su - repo -c 'pipx install invenio-cli'
+    su - cloo -c 'pipx install invenio-cli'
