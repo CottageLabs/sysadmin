@@ -33,8 +33,6 @@
     app_supervisor_tasks:
         - doaj
     background_supervisor_tasks:
-        - huey-long-running
-        - huey-main
         - huey-events
         - huey-scheduled-long
         - huey-scheduled-short
