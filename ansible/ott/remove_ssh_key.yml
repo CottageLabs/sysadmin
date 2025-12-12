@@ -1,0 +1,92 @@
+---
+- name: Collect SSH keys from all DOAJ hosts
+  hosts: all
+  become: yes
+  gather_facts: no
+
+  tasks:
+    - name: Read authorized_keys file
+      ansible.builtin.slurp:
+        src: "/home/{{ ansible_user }}/.ssh/authorized_keys"
+      register: authorized_keys_content
+      ignore_errors: yes
+
+    - name: Parse SSH keys
+      ansible.builtin.set_fact:
+        ssh_keys_list: "{{ (authorized_keys_content.content | b64decode).split('\n') | reject('match', '^\\s*$') | reject('match', '^#') | list }}"
+      when: authorized_keys_content.content is defined
+
+    - name: Store keys with host info
+      ansible.builtin.set_fact:
+        host_keys: "{{ ssh_keys_list | default([]) | map('regex_replace', '^(.*)$', '\\1|||' + inventory_hostname) | list }}"
+
+- name: Display deduplicated SSH keys
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - name: Aggregate all keys from all hosts
+      ansible.builtin.set_fact:
+        all_host_keys: "{{ groups['all'] | map('extract', hostvars, 'host_keys') | select('defined') | flatten | list }}"
+
+    - name: Deduplicate keys (extract unique key part before |||)
+      ansible.builtin.set_fact:
+        unique_keys: "{{ all_host_keys | map('regex_replace', '\\|\\|\\|.*$', '') | map('trim') | unique | list }}"
+
+    - name: Display keys and pause for review
+      ansible.builtin.pause:
+        prompt: |
+
+          ========================================
+          SSH Keys found across all DOAJ hosts:
+          ========================================
+          {% for key in unique_keys %}
+          {{ loop.index }}. {{ key.split()[0] }} ...{{ key.split()[1][-8:] if key.split() | length > 1 else '' }} {{ '(' + key.split()[2] + ')' if key.split() | length > 2 else '(No label)' }}
+          {% endfor %}
+          ========================================
+
+          Press ENTER to continue to removal phase, or Ctrl+C to abort
+
+- name: Remove specified SSH key
+  hosts: all
+  become: yes
+  gather_facts: no
+  vars_prompt:
+    - name: key_identifier
+      prompt: "Enter the key label/comment or partial key text to remove"
+      private: no
+
+  tasks:
+    - name: Read authorized_keys file
+      ansible.builtin.slurp:
+        src: "/home/{{ ansible_user }}/.ssh/authorized_keys"
+      register: authorized_keys_content
+      ignore_errors: yes
+
+    - name: Parse all keys
+      ansible.builtin.set_fact:
+        all_keys: "{{ (authorized_keys_content.content | b64decode).split('\n') | reject('match', '^\\s*$') | reject('match', '^#') | list }}"
+      when: authorized_keys_content.content is defined
+
+    - name: Find matching key
+      ansible.builtin.set_fact:
+        key_to_remove: "{{ all_keys | default([]) | select('search', key_identifier) | first | default('') }}"
+
+    - name: Remove matching SSH key
+      ansible.builtin.lineinfile:
+        path: "/home/{{ ansible_user }}/.ssh/authorized_keys"
+        line: "{{ key_to_remove }}"
+        state: absent
+      when: key_to_remove | length > 0
+      register: removal_result
+
+    - name: Report removal success
+      ansible.builtin.debug:
+        msg: "✓ Removed key from {{ inventory_hostname }}: {{ key_to_remove.split()[-1] if key_to_remove.split() | length > 2 else 'unlabeled key' }}"
+      when: removal_result is changed
+
+    - name: Report no match
+      ansible.builtin.debug:
+        msg: "⚠ No matching key found on {{ inventory_hostname }}"
+      when: key_to_remove | length == 0 and authorized_keys_content.content is defined
