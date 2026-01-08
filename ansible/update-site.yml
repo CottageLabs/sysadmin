@@ -21,3 +21,15 @@
     - name: Run the service deploy script if there were code changes
       shell: /home/cloo/doaj/deploy/deploy.sh production
       when: code_updated.changed
+
+- name: Purge Cloudflare cache if code was updated
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    cloudflare_api_token: "{{ lookup('ansible.builtin.env', 'CLOUDFLARE_API_TOKEN') }}"
+    cloudflare_zone_id: "{{ lookup('ansible.builtin.env', 'CLOUDFLARE_ZONE_ID') }}"
+  tasks:
+    - name: Import Cloudflare purge tasks
+      include_tasks: tasks/purge_cloudflare_tasks.yml
+      when: hostvars[groups['app'][0]]['code_updated']['changed'] | default(false)
