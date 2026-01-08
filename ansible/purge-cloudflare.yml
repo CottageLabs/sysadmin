@@ -1,0 +1,14 @@
+---
+# example to run : ansible-playbook -i doaj-hosts.ini purge-cloudflare.yml -e '{"cloudflare_purge_files": ["https://doaj.org/static/css/style.css", "https://doaj.org/static/js/app.js"]}'
+- name: Purge Cloudflare Cache
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    cloudflare_api_token: "{{ lookup('ansible.builtin.env', 'CLOUDFLARE_API_TOKEN') }}"
+    cloudflare_zone_id: "{{ lookup('ansible.builtin.env', 'CLOUDFLARE_ZONE_ID') }}"
+
+  tasks:
+    - name: Purge Cloudflare
+      include_tasks: tasks/purge_cloudflare_tasks.yml

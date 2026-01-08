@@ -14,6 +14,11 @@ For this you'll also need your Digital Ocean personal access token,
 https://docs.digitalocean.com/reference/api/create-personal-access-token/
 and set the environment variable on your local machine `$DIGITALOCEAN_TOKEN`.
 
+For Cloudflare cache purging during deployment, you'll need a Cloudflare API Token and Zone ID:
+https://developers.cloudflare.com/fundamentals/api/get-started/create-token/
+Set the environment variables `$CLOUDFLARE_API_TOKEN` and `$CLOUDFLARE_ZONE_ID` on your local machine.
+If these variables are not set, the Cloudflare purge step will fail if code changes are detected.
+
 See the documentation https://docs.digitalocean.com/reference/ansible/reference/ for more info.
 
 ---
