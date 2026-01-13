@@ -1,0 +1,35 @@
+---
+# Tasks for purging Cloudflare cache.
+# Requires:
+#   cloudflare_api_token
+#   cloudflare_zone_id
+#   cloudflare_purge_files (optional)
+
+- name: Fail if Cloudflare credentials are missing
+  fail:
+    msg: "CLOUDFLARE_API_TOKEN and CLOUDFLARE_ZONE_ID environment variables must be set."
+  when: (cloudflare_api_token is not defined or cloudflare_api_token == "") or (cloudflare_zone_id is not defined or cloudflare_zone_id == "")
+
+- name: Purge everything from Cloudflare cache
+  uri:
+    url: "https://api.cloudflare.com/client/v4/zones/{{ cloudflare_zone_id }}/purge_cache"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ cloudflare_api_token }}"
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      purge_everything: true
+  when: cloudflare_purge_files | default([]) | length == 0
+
+- name: Purge specific files from Cloudflare cache
+  uri:
+    url: "https://api.cloudflare.com/client/v4/zones/{{ cloudflare_zone_id }}/purge_cache"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ cloudflare_api_token }}"
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      files: "{{ cloudflare_purge_files }}"
+  when: cloudflare_purge_files | default([]) | length > 0
