@@ -79,6 +79,6 @@
     server_name: "{{ hostvars.localhost.remote_host_name }}"
     certbot_domain: public-2.doaj.cottagelabs.com
     ansible_user: "cloo"
-    install_es: false
+    install_indexdex: false
     git_branch: "master"
     deploy_env: production
