@@ -1,5 +1,5 @@
 ## command using IP address -
-# ansible-playbook -i 192.168.1.100, server_initial_setup.yml --e "server_name=test1 install_es=true git_branch=feature/form_experiment
+# ansible-playbook -i 192.168.1.100, server_initial_setup.yml --e "server_name=test1 install_indexdex=true git_branch=feature/form_experiment
 #      ansible_user=cloo aws_profile=doaj-test-upload aws_access_key=key aws_secret_key=key
 #      aws_secret_id=doaj/test-credentials" --private-key=~/.ssh/id_rsa -vv
 ## command using a specific host or group from your inventory.
@@ -16,7 +16,7 @@
 
   vars:
     ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
-    install_es: false
+    install_indexdex: false
     server_name: "kibana" # name of the server/droplet
     domain_name: "{{ server_name + '.doaj.cottagelabs.com' }}"
     certbot_create_standalone_stop_services:
@@ -36,7 +36,7 @@
 
 #    - name: Install elasticsearch
 #      include_tasks: tasks/install_elasticsearch.yml
-#      when: install_es | bool
+#      when: install_indexdex | bool
 
     - name: Ensure Python3, supervisor, and Git are installed
       apt:

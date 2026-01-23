@@ -80,4 +80,4 @@
     target: "{{ hostvars.localhost.public_ip }}"
     server_name: "{{ hostvars.localhost.remote_host_name }}"
     ansible_user: "cloo"
-    install_es: true
+    install_indexdex: true

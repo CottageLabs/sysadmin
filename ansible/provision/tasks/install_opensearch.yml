@@ -1,0 +1,42 @@
+- name: Check if OpenSearch is installed
+  shell: "dpkg -l | grep opensearch"
+  register: os_check
+  ignore_errors: yes
+
+- name: Import the OpenSearch GPG key
+  become: yes
+  ansible.builtin.shell:
+    # Check signing key URL when upgrading OpenSearch major version https://docs.opensearch.org/1.3/install-and-configure/install-opensearch/debian/
+    cmd: "curl -o- https://artifacts.opensearch.org/publickeys/opensearch.pgp | sudo gpg --dearmor --batch --yes -o /usr/share/keyrings/opensearch-keyring"
+    creates: /usr/share/keyrings/opensearch-keyring
+  when: os_check.rc != 0
+
+- name: Add the OpenSearch repository
+  become: yes
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/opensearch-keyring] https://artifacts.opensearch.org/releases/bundle/opensearch/1.x/apt stable main"
+    filename: opensearch-1.x
+    state: present
+  when: os_check.rc != 0
+
+- name: Update the apt cache
+  become: yes
+  ansible.builtin.apt:
+    update_cache: yes
+  when: os_check.rc != 0
+
+- name: Install OpenSearch 1.3.20
+  become: yes
+  ansible.builtin.apt:
+    name: opensearch=1.3.20
+    state: present
+    allow_downgrade: yes
+  when: os_check.rc != 0
+
+- name: Configure OpenSearch to start on boot
+  become: yes
+  ansible.builtin.systemd:
+    name: opensearch
+    enabled: yes
+    state: started
+  when: os_check.rc != 0

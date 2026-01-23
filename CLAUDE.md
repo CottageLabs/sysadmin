@@ -64,7 +64,7 @@ ansible-playbook ansible/reboot-metrics.yml
 ```bash
 # Setup with specific parameters
 ansible-playbook -i IP_ADDRESS, ansible/provision/server_initial_setup.yml \
-  -e "server_name=SERVER_NAME install_es=false git_branch=master ansible_user=cloo" \
+  -e "server_name=SERVER_NAME install_index=false git_branch=master ansible_user=cloo" \
   --private-key=~/.ssh/id_rsa
 ```
 
