@@ -1,0 +1,35 @@
+#cloud-config
+## Index machines; Memory-Optimized 3x SSD / 32 GB / 4 vCPUs, $208 / month
+## Add and configure new user cloo, authorized keys for aga, rama, richard and steve
+users:
+  - name: cloo
+    ssh-authorized-keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAFb1SNKeovfTz1JXrok00+s6YREBlgKFlrDEYh7Dh+D steve@cottagelabs.com
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCtxwRkaX+jvQw0w5bpuedW7DIizUQiz3HYe8QW/mo8ykgW7FCU21OjYTM3+/yopmvR4BbgpuUioKvzC0rx+rVpi+OvxepcHqIXdmmw05ucFbRA+rZXMh1bYkZmpoxfazHPFfJJ1Ne6MRcQTzKbH/BZyhiZ8Av3UXj12pm2mhj0qhtY8+VK3th1xeeRHx0pfTs53fTpSUu+OIighZOejS9LXE+kqJ/xFh3dhFDrvK/j9ow5BLEcETNQYWV7gVwybQXljqk1HEk4gdbHGFtaXKo+sTzIreT5aRcED/f4+geKLQ+c+g6F39LlwCK5JUPaPgL+nQ5kojBvdnNN5i9ruHfj ramakrishnasakhamuru@Ramakrishnas-MacBook-Pro.local
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC8yL7105QCkduxqgYl4vKEGFyG9nFMFn5NBo4FjnD+J5NPxO3zjQ+DxY0hO1JLdwpGUfm+C+vS9OqzX/RjyKe/4+TLLRzys1uJKDKZLccv/GkPhu1bVX+0cTNDIGaYAjwNdQ6E41G0MT30AGOa/Psp9T0O3CYICzHTAqYUSbR/lsYf8I9sIkFMqjJld8Rf92Rs113CVChtZnKz9ynybOk7gUdq+RkPnMdn5oRaCKWWzSZIgnE2vrDgD8goFJS/KdMt5xlMUB4Mw259bApZsOdvPtX5Jkf92OI0PVA5JJKZ2flMVhAcIAZMVip3idyoajdXp07j9J7QwI5BjkKTzbKj richard@cottagelabs.com
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAjvBPCryTSeDGS3DxNbzQ/JaBbAsivdPzeKgnDKKlad ansible-steve-doaj@cottagelabs.com
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    groups: sudo
+    shell: /bin/bash
+
+## Disable password authentication with the SSH daemon
+ssh_pwauth: false
+
+## Update apt database and upgrade packages on first boot
+package_update: true
+package_upgrade: true
+
+## Install additional packages on first boot
+packages:
+  - git
+  - screen
+  - htop
+  - tree
+  - ncdu
+  - lsb-release
+  - ca-certificates
+  - curl
+  - wget
+  - gnupg2
+  - gcc
+  - openjdk-11-jdk

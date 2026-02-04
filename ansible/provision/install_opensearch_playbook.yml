@@ -1,0 +1,5 @@
+- name: Install OpenSearch on opensearch hosts
+  hosts: opensearch
+  tasks:
+    - name: Install opensearch
+      include_tasks: tasks/install_opensearch.yml
