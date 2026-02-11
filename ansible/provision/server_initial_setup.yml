@@ -16,7 +16,7 @@
 
   vars:
     ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
-    install_indexdex: false
+    install_index: false
     server_name: "test" # name of the server/droplet
     git_branch: "develop" # or "master" or provide at runtime with -e git_branch=...
     repo_url: "https://github.com/DOAJ/doaj.git"
@@ -53,7 +53,7 @@
 
     - name: Install opensearch
       include_tasks: tasks/install_opensearch.yml
-      when: install_indexdex | bool
+      when: install_index | bool
 
     - name: Summarise actions
       debug:
@@ -118,9 +118,9 @@
         content: |
           BASE_URL = "https://{{ domain_name }}"
           BASE_API_URL = "https://{{ domain_name }}/api/"
-          ELASTICSEARCH_HOSTS = ['https://admin:admin@localhost:9200']
-          ELASTIC_SEARCH_HOST = 'https://admin:admin@localhost:9200'
-          ELASTIC_SEARCH_VERIFY_CERTS = False
+          ELASTICSEARCH_HOSTS = ['http://localhost:9200']
+          ELASTIC_SEARCH_HOST = 'http://localhost:9200'
+          #ELASTIC_SEARCH_VERIFY_CERTS = False
           INITIALISE_INDEX = False
         owner: "{{ ansible_user }}"
         group: "{{ ansible_user }}"
