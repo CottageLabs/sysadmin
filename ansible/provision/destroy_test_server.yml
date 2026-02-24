@@ -25,11 +25,20 @@
       ansible.builtin.set_fact:
         public_ip: "{{ destroy_response['droplet']['networks']['v4'] | selectattr('type', '==', 'public') | map(attribute='ip_address') | first }}"
 
-    - name: Clean up the corresponding DNS record 
+    - name: Clean up the corresponding DNS A record 
       digitalocean.cloud.domain_record:
         token: "{{ digitalocean_token }}"
         domain_name: '{{ dns_domain }}'
         type: A
         name: '{{ dns_prefix }}'
         data: "{{ public_ip }}"
+        state: absent
+  
+    - name: Delete existing latest.{{ dns_domain }} CNAME record if it points to this machine
+      digitalocean.cloud.domain_record:
+        token: "{{ digitalocean_token }}"
+        domain_name: '{{ dns_domain }}'
+        type: CNAME
+        name: latest
+        data: "{{ dns_prefix }}.{{ dns_domain }}"
         state: absent

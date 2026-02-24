@@ -43,6 +43,7 @@
     certbot_certs:
       - domains:
           - "{{ certbot_domain }}"
+          - "latest.doaj.cottagelabs.com"
         email: sysadmin@cottagelabs.com
         state: present
 
@@ -163,11 +164,11 @@
       command: cp {{ destination }}/deploy/nginx/{{deploy_env}}/doaj /etc/nginx/sites-available/{{domain_name}}
       when: deploy_env == "test"
 
-    - name: Update nginx file
+    - name: Update nginx file to the correct domain name and SSL certificate
       become: true
       replace:
         path: /etc/nginx/sites-available/{{ domain_name }}
-        regexp: "testdoaj\\.cottagelabs\\.com"
+        regexp: "<placeholder_servername>"
         replace: "{{ domain_name }}"
       when: deploy_env == "test"
 

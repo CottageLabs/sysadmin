@@ -49,13 +49,38 @@
         public_ip: "{{ dropletinfo['droplets'][0]['networks']['v4'] | selectattr('type', '==', 'public') | map(attribute='ip_address') | first }}"
         droplet_id: "{{ dropletinfo['droplets'][0]['id'] }}"
 
-    - name: Create domain A record
+    - name: Find correct CNAME for latest.{{ dns_domain }}
+      digitalocean.cloud.domain_records_info:
+        token: "{{ digitalocean_token }}"
+        domain_name: '{{ dns_domain }}'
+        type: CNAME
+      register: cname_info
+    
+    - name: Delete existing latest.{{ dns_domain }} CNAME record to re-create it for this machine
+      digitalocean.cloud.domain_record:
+        token: "{{ digitalocean_token }}"
+        domain_name: '{{ dns_domain }}'
+        type: CNAME
+        name: latest
+        data: "{{ cname_info['domain_records'][0]['data'] }}"
+        state: absent
+      when: cname_info['domain_records'] | length > 0
+
+    - name: Create domain A record for {{ dns_prefix }}.{{ dns_domain }} pointing to {{ public_ip }}
       digitalocean.cloud.domain_record:
         token: "{{ digitalocean_token }}"
         domain_name: '{{ dns_domain }}'
         type: A
         name: '{{ dns_prefix }}'
         data: "{{ public_ip }}"
+
+    - name: Re-apply latest.{{ dns_domain }} CNAME record to point to this VM at {{ dns_prefix }}.{{ dns_domain }}
+      digitalocean.cloud.domain_record:
+        token: "{{ digitalocean_token }}"
+        domain_name: '{{ dns_domain }}'
+        type: CNAME
+        name: latest
+        data: "{{ dns_prefix }}."
 
     - name: Assign the new droplet to the DOAJ project using doctl
       local_action: ansible.builtin.command doctl projects resources assign f7668431-327e-47d8-9d7e-73e713fe1d4d --resource=do:droplet:{{ droplet_id }}
@@ -67,9 +92,8 @@
         name: "{{ public_ip }}"
         groups: test_servers
 
-    - name: Output a summary including login command
-      ansible.builtin.debug:
-        msg: "Test server created: cloo@{{dns_prefix}}.{{dns_domain}} at IP {{public_ip}}"
+    - set_fact:
+        login_command: "ssh cloo@{{dns_prefix}}.{{dns_domain}}"
 
     - name: Give 7 minutes for the server to be up
       pause:
@@ -96,3 +120,10 @@
   vars:
     target: "{{ hostvars.localhost.public_ip }}"
     ansible_user: "cloo"
+
+- name: Output a login command for immediate use
+  hosts: localhost
+  tasks:
+    - name: Login command for {{ hostvars.localhost.remote_host_name }}
+      ansible.builtin.debug:
+        msg: "Test server created: {{ hostvars.localhost.login_command }}"
