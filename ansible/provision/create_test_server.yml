@@ -81,6 +81,7 @@
         type: CNAME
         name: latest
         data: "{{ dns_prefix }}."
+        ttl: 600
 
     - name: Assign the new droplet to the DOAJ project using doctl
       local_action: ansible.builtin.command doctl projects resources assign f7668431-327e-47d8-9d7e-73e713fe1d4d --resource=do:droplet:{{ droplet_id }}
