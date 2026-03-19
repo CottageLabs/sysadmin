@@ -1,5 +1,5 @@
 ---
-# example to run : ansible-playbook -i doaj-hosts.ini purge-cloudflare.yml -e '{"cloudflare_purge_files": ["https://doaj.org/static/css/style.css", "https://doaj.org/static/js/app.js"]}'
+# example to run : ansible-playbook -i localhost, purge-cloudflare.yml -e '{"cloudflare_purge_files": ["https://doaj.org/static/css/style.css", "https://doaj.org/static/js/app.js"]}'
 - name: Purge Cloudflare Cache
   hosts: localhost
   connection: local
