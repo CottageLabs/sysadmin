@@ -16,6 +16,7 @@
     droplet_name: test1
     dns_prefix: '{{ droplet_name }}'
     dns_domain: doaj.cottagelabs.com
+    skip_latest_dns: false
   
   tasks:
 
@@ -55,7 +56,8 @@
         domain_name: '{{ dns_domain }}'
         type: CNAME
       register: cname_info
-    
+      when: not skip_latest_dns | bool
+
     - name: Delete existing latest.{{ dns_domain }} CNAME record to re-create it for this machine
       digitalocean.cloud.domain_record:
         token: "{{ digitalocean_token }}"
@@ -64,7 +66,7 @@
         name: latest
         data: "{{ cname_info['domain_records'][0]['data'] }}"
         state: absent
-      when: cname_info['domain_records'] | length > 0
+      when: not skip_latest_dns | bool and cname_info['domain_records'] | length > 0
 
     - name: Create domain A record for {{ dns_prefix }}.{{ dns_domain }} pointing to {{ public_ip }}
       digitalocean.cloud.domain_record:
@@ -82,6 +84,7 @@
         name: latest
         data: "{{ dns_prefix }}."
         ttl: 600
+      when: not skip_latest_dns | bool
 
     - name: Assign the new droplet to the DOAJ project using doctl
       local_action: ansible.builtin.command doctl projects resources assign f7668431-327e-47d8-9d7e-73e713fe1d4d --resource=do:droplet:{{ droplet_id }}

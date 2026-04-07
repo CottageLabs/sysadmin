@@ -39,11 +39,10 @@
     certbot_create_standalone_stop_services:
       - nginx
     certbot_create_extra_args: ""
+    skip_latest_dns: false
     certbot_create_if_missing: true
     certbot_certs:
-      - domains:
-          - "{{ certbot_domain }}"
-          - "latest.doaj.cottagelabs.com"
+      - domains: "{{ [certbot_domain] if skip_latest_dns | bool else [certbot_domain, 'latest.doaj.cottagelabs.com'] }}"
         email: sysadmin@cottagelabs.com
         state: present
 
@@ -90,6 +89,7 @@
         - pip
         - awscli
         virtualenv: "{{ venv_path }}"
+        virtualenv_command: python3 -m venv
         state: latest
 
     - name: Ensure ~/.aws directory exists
