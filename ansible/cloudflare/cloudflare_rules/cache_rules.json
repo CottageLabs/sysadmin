@@ -1,0 +1,10 @@
+{
+  "result": null,
+  "success": false,
+  "errors": [
+    {
+      "message": "request is not authorized"
+    }
+  ],
+  "messages": []
+}

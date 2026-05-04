@@ -1,0 +1,36 @@
+{
+  "result": {
+    "description": "",
+    "id": "ffbc4d7fcdae4cd3a36aaaa9ac921483",
+    "kind": "zone",
+    "last_updated": "2025-07-09T09:18:41.981517Z",
+    "name": "default",
+    "phase": "http_ratelimit",
+    "rules": [
+      {
+        "action": "block",
+        "description": "Leaked credential check",
+        "enabled": true,
+        "expression": "(cf.waf.credential_check.password_leaked)",
+        "id": "e254b99c19e746ce9b0d9e33eaff8992",
+        "last_updated": "2025-07-09T09:18:41.981517Z",
+        "ratelimit": {
+          "characteristics": [
+            "ip.src",
+            "cf.colo.id"
+          ],
+          "mitigation_timeout": 3600,
+          "period": 10,
+          "requests_per_period": 5
+        },
+        "ref": "e254b99c19e746ce9b0d9e33eaff8992",
+        "version": "1"
+      }
+    ],
+    "source": "rate_limit",
+    "version": "1"
+  },
+  "success": true,
+  "errors": [],
+  "messages": []
+}
