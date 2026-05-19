@@ -1,0 +1,35 @@
+{
+  "result": {
+    "description": "",
+    "id": "3d79da9812e44c449dde54903717be8a",
+    "kind": "zone",
+    "last_updated": "2025-05-20T10:09:27.585167Z",
+    "name": "default",
+    "phase": "http_request_firewall_custom",
+    "rules": [
+      {
+        "action": "skip",
+        "action_parameters": {
+          "phases": [
+            "http_request_firewall_managed"
+          ]
+        },
+        "description": "Allow Blog uploads",
+        "enabled": true,
+        "expression": "(http.request.full_uri contains \"blog.doaj.org/wp-admin/\")",
+        "id": "b47819cd21af43f09d0d9b972755b749",
+        "last_updated": "2025-05-20T10:09:27.585167Z",
+        "logging": {
+          "enabled": true
+        },
+        "ref": "b47819cd21af43f09d0d9b972755b749",
+        "version": "1"
+      }
+    ],
+    "source": "firewall_custom",
+    "version": "1"
+  },
+  "success": true,
+  "errors": [],
+  "messages": []
+}

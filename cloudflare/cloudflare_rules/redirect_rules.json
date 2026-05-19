@@ -1,0 +1,10 @@
+{
+  "result": null,
+  "success": false,
+  "errors": [
+    {
+      "message": "phase \"http_request_redirect\" not allowed at zone level"
+    }
+  ],
+  "messages": []
+}
