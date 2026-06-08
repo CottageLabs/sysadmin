@@ -1,5 +1,5 @@
 ## command using IP address -
-# ansible-playbook -i 192.168.1.100, server_initial_setup.yml --e "server_name=test1 install_indexdex=true git_branch=feature/form_experiment
+# ansible-playbook -i 192.168.1.100, server_initial_setup.yml --e "server_name=test1 install_index=true git_branch=feature/form_experiment
 #      ansible_user=cloo aws_profile=doaj-test-upload aws_access_key=key aws_secret_key=key
 #      aws_secret_id=doaj/test-credentials" --private-key=~/.ssh/id_rsa -vv
 ## command using a specific host or group from your inventory.
@@ -126,6 +126,7 @@
         owner: "{{ ansible_user }}"
         group: "{{ ansible_user }}"
         mode: '0644'
+      when: deploy_env == "test"
 
     - name: Check if nginx file exists in logrotate
       stat:
@@ -285,7 +286,7 @@
       become: yes
       when: "'app' in group_names  or deploy_env == 'test'"
 
-    - name: Ensure supervisor knows about our tasks for app server
+    - name: Ensure supervisor knows about our tasks for background server
       community.general.supervisorctl:
         name: "{{ item }}"
         state: present
