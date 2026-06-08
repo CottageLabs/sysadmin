@@ -109,7 +109,7 @@
     target: "{{ hostvars.localhost.public_ip }}"
     server_name: "{{ hostvars.localhost.remote_host_name }}"
     ansible_user: "cloo"
-    install_indexdex: true
+    install_index: true
     git_branch: "master"
 
 - name: Give a minute for the app to stabilise

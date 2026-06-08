@@ -7,9 +7,9 @@
   vars:
     digitalocean_token: "{{ lookup('ansible.builtin.env', 'DIGITALOCEAN_TOKEN') }}"
     server_config: "{{ lookup('ansible.builtin.file', '../../cloud-init_userdata/doaj-app_cloud-config.txt') }}"
-    droplet_name: doaj-public-2
+    droplet_name: doaj-public-3
     # We initially want this server accessible via public2.doaj.cottagelabs.com
-    dns_prefix: public-2
+    dns_prefix: public-3
     dns_domain: doaj.cottagelabs.com
 
   tasks:
@@ -77,8 +77,9 @@
   vars:
     target: "{{ hostvars.localhost.public_ip }}"
     server_name: "{{ hostvars.localhost.remote_host_name }}"
-    certbot_domain: public-2.doaj.cottagelabs.com
+    certbot_domain: public-3.doaj.cottagelabs.com
     ansible_user: "cloo"
-    install_indexdex: false
+    install_index: false
     git_branch: "master"
     deploy_env: production
+    skip_latest_dns: true
