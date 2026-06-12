@@ -26,6 +26,7 @@ Releases are generally but not exclusively on a Thursday. There's a checklist to
 * Git flow branch management
 * Release freeze - prepare `develop` in advance and make sure the tests pass and eyeball it.
 * Hold off 
+
 #### [Test Servers](https://github.com/DOAJ/doajPM/wiki/How-to:-Deploy-a-Branch-to-a-Test-Server))
 
 Provision commands are run from the [sysadmin repo](https://github.com/CottageLabs/sysadmin/) directory `sysadmin/ansible/provision`
@@ -50,6 +51,24 @@ I take it upon myself to fix broken tests periodically.
 #### Docs Repo
 
 `STEVE_PAT` is a personal access token that requires my GH account to be active and my involvement in the DOAJ project. Replace if I leave or beforehand with a better mechanism.
+
+#### Add new Sysadmins
+
+In order to use the ansible scripts, their Public Key needs to be uploaded to all machines. An existing sysadmin can do this via the `sysadmin/ott/upload_ssh_key.yml` playbook:
+
+Edit the playbook or supply the key path as an argument (TODO?)
+
+```
+ansible-playbook -i ../doaj-hosts.ini upload_ssh_key.yml
+```
+
+And at any time it should be possible to verify access to all machines with the `ping` module from `sysadmin/ansible`:
+
+```
+ansible -i doaj-hosts.ini all -m ping
+```
+
+You may need to Agree to host key verification numerous times, or log into the machines directly before this succeeds.
 
 ### RKI
 
