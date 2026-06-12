@@ -53,10 +53,30 @@
     mode: '0640'
   when: os_check.rc != 0
 
+- name: Create opensearch systemd drop-in directory
+  become: yes
+  ansible.builtin.file:
+    path: /etc/systemd/system/opensearch.service.d
+    state: directory
+    mode: '0755'
+  when: os_check.rc != 0
+
+- name: Set opensearch systemd resource limits
+  become: yes
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/opensearch.service.d/override.conf
+    content: |
+      [Service]
+      LimitMEMLOCK=infinity
+      LimitNOFILE=65535
+    mode: '0644'
+  when: os_check.rc != 0
+
 - name: Restart Opensearch and configure to start on boot
   become: yes
   ansible.builtin.systemd:
     name: opensearch
     enabled: yes
     state: restarted
+    daemon_reload: yes
   when: os_check.rc != 0

@@ -14,15 +14,13 @@
 #
 # Use a descriptive name for your cluster:
 #
-cluster.name: doaj-${HOSTNAME}
-#
+cluster.name: {{ opensearch_cluster_name }}
 #
 # ------------------------------------ Node ------------------------------------
 #
 # Use a descriptive name for the node:
 #
 node.name: ${HOSTNAME}
-#
 #
 # Add custom attributes to the node:
 #
@@ -54,7 +52,7 @@ bootstrap.memory_lock: true
 #
 # Set the bind address to a specific IP (IPv4 or IPv6):
 #
-#network.host: 192.168.0.1
+network.host: _eth1:ipv4_
 #
 # Set a custom port for HTTP:
 #
@@ -67,7 +65,7 @@ bootstrap.memory_lock: true
 # Pass an initial list of hosts to perform discovery when this node is started:
 # The default list of hosts is ["127.0.0.1", "[::1]"]
 #
-#discovery.seed_hosts: ["host1", "host2"]
+discovery.seed_hosts: {{ opensearch_seed_hosts | to_json }}
 #
 # Bootstrap the cluster using an initial set of master-eligible nodes:
 #
@@ -115,3 +113,18 @@ plugins.security.disabled: true
 # plugins.security.system_indices.indices: [".plugins-ml-model", ".plugins-ml-task", ".opendistro-alerting-config", ".opendistro-alerting-alert*", ".opendistro-anomaly-results*", ".opendistro-anomaly-detector*", ".opendistro-anomaly-checkpoints", ".opendistro-anomaly-detection-state", ".opendistro-reports-*", ".opensearch-notifications-*", ".opensearch-notebooks", ".opensearch-observability", ".opendistro-asynchronous-search-response*", ".replication-metadata-store"]
 # node.max_local_storage_nodes: 3
 ######## End OpenSearch Security Demo Configuration ########
+
+## Carried from DOAJ Elasticsearch:
+http.cors.enabled: true
+http.cors.allow-origin: "*"
+http.cors.allow-methods: OPTIONS, HEAD, GET, POST, PUT, DELETE
+http.cors.allow-headers: X-Requested-With,X-Auth-Token,Content-Type,Content-Length
+http.cors.allow-credentials: true
+
+{% if opensearch_s3_backup | default(false) %}
+# Settings for Backups
+s3.client.default.endpoint: "s3.eu-west-2.amazonaws.com"
+s3.client.default.max_retries: 5
+s3.client.default.use_throttle_retries: true
+s3.client.default.region: "eu-west-2"
+{% endif %}
