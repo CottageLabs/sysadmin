@@ -113,7 +113,7 @@
 
     # adding the Google Sheets API secret credential to appdata folder will be done in deploy.sh through aws secrets
 
-    - name: Create instance config file
+    - name: Create instance config file for test server
       ansible.builtin.copy:
         dest: "{{ destination }}/instance.cfg"
         content: |
@@ -127,6 +127,17 @@
         group: "{{ ansible_user }}"
         mode: '0644'
       when: deploy_env == "test"
+
+    - name: Create instance config file for app servers
+      ansible.builtin.copy:
+        dest: "{{ destination }}/instance.cfg"
+        content: |
+                                         # doaj-search-r1                            doaj-search-r2
+          ELASTICSEARCH_HOSTS = [{'host': '10.131.100.180', 'port': 9200}, {'host': '10.131.124.133', 'port': 9200}]
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0644'
+      when: "'app' in group_names"
 
     - name: Check if nginx file exists in logrotate
       stat:
