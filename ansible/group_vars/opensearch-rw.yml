@@ -1,0 +1,6 @@
+opensearch_cluster_name: doaj-rw
+opensearch_seed_hosts:
+  - "10.131.22.203"
+  - "10.131.99.251"
+opensearch_heap_size: 16g
+opensearch_s3_backup: true

@@ -16,6 +16,11 @@ doaj-search-r2  	167.71.136.148          10.131.124.133
 
 ### Customise the `opensearch.yml` and `jvm.options` files
 
+These customisations are applied automatically by the Ansible playbook via
+`provision/templates/opensearch1.3.yml`, `provision/templates/os1.3.jvm.options`,
+and `group_vars/opensearch-rw.yml` / `group_vars/opensearch-r.yml`.
+The diffs below document what was changed from the defaults, for reference.
+
 Note, we are provisioning 2 clusters, `doaj-rw` and `doaj-r` (for leader and follower), `cluster.name` and `discovery.seed_hosts` should differ
 
 ```diff
@@ -63,7 +68,8 @@ $ diff jvm.options jvm.options.default
 > -Xmx1g
 ```
 
-Ensure we have our limits set
+Ensure we have our limits set. This is applied automatically by the Ansible playbook as
+`/etc/systemd/system/opensearch.service.d/override.conf`. To apply manually:
 
 `sudo systemctl edit opensearch`
 
