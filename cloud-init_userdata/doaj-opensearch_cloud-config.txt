@@ -9,6 +9,7 @@ users:
       - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC8yL7105QCkduxqgYl4vKEGFyG9nFMFn5NBo4FjnD+J5NPxO3zjQ+DxY0hO1JLdwpGUfm+C+vS9OqzX/RjyKe/4+TLLRzys1uJKDKZLccv/GkPhu1bVX+0cTNDIGaYAjwNdQ6E41G0MT30AGOa/Psp9T0O3CYICzHTAqYUSbR/lsYf8I9sIkFMqjJld8Rf92Rs113CVChtZnKz9ynybOk7gUdq+RkPnMdn5oRaCKWWzSZIgnE2vrDgD8goFJS/KdMt5xlMUB4Mw259bApZsOdvPtX5Jkf92OI0PVA5JJKZ2flMVhAcIAZMVip3idyoajdXp07j9J7QwI5BjkKTzbKj richard@cottagelabs.com
       - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAjvBPCryTSeDGS3DxNbzQ/JaBbAsivdPzeKgnDKKlad ansible-steve-doaj@cottagelabs.com
       - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFXfWBji8D+VLpzb74MzGTRBuuNuXRvU2ziUg2PW1q2Y anusha@cottagelabs.com
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP1IbOCzPJCBBQcDsutoUB3vHzYZ7bIKbNmeeiXW8DWx hrafn@cottagelabs.com
     sudo: ['ALL=(ALL) NOPASSWD:ALL']
     groups: sudo
     shell: /bin/bash
