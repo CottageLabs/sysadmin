@@ -132,7 +132,7 @@
       ansible.builtin.copy:
         dest: "{{ destination }}/instance.cfg"
         content: |
-                                         # doaj-search-r1                            doaj-search-r2
+          #                                doaj-search-r1                            doaj-search-r2
           ELASTICSEARCH_HOSTS = [{'host': '10.131.100.180', 'port': 9200}, {'host': '10.131.124.133', 'port': 9200}]
         owner: "{{ ansible_user }}"
         group: "{{ ansible_user }}"
