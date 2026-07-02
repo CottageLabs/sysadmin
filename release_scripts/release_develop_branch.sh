@@ -20,7 +20,7 @@ confirm() {
 if [ -n "$RELEASE_REPO_LOCATION" ]; then
     echo "Found RELEASE_REPO_LOCATION environment variable: $RELEASE_REPO_LOCATION"
     read -p "Use this location? (y/n): " use_env
-    if [[ "$use_env" =~ ^[yY]$ ]]; then
+    if [ "$use_env" = "y" ] || [ "$use_env" = "Y" ]; then
         REPO_DIR="$RELEASE_REPO_LOCATION"
     else
         read -p "Enter the repository directory path: " REPO_DIR
