@@ -52,8 +52,12 @@
         var: ansible_facts
 
     - name: Install opensearch
+      include_tasks: tasks/install_opensearch_test_server.yml
+      when: install_index | bool and deploy_env == "test"
+
+    - name: Install opensearch
       include_tasks: tasks/install_opensearch.yml
-      when: install_index | bool
+      when: install_index | bool and deploy_env != "test"
 
     - name: Summarise actions
       debug:
