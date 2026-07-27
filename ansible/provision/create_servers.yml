@@ -1,8 +1,6 @@
 #
 # Unified playbook to create one or more DOAJ servers.
 #
-# This playbook calls the existing individual server creation playbooks,
-#
 # Usage:
 #   # Create all servers:
 #   ansible-playbook create_servers.yml --private-key=~/.ssh/id_rsa -vv
