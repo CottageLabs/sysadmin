@@ -7,10 +7,12 @@
   vars:
     digitalocean_token: "{{ lookup('ansible.builtin.env', 'DIGITALOCEAN_TOKEN') }}"
     server_config: "{{ lookup('ansible.builtin.file', '../../cloud-init_userdata/doaj-app_cloud-config.txt') }}"
+    droplet_size: s-4vcpu-8gb
     droplet_name: doaj-public-3
     # We initially want this server accessible via public2.doaj.cottagelabs.com
     dns_prefix: public-3
     dns_domain: doaj.cottagelabs.com
+    server_group: app
 
   tasks:
 
@@ -21,7 +23,7 @@
         name: '{{droplet_name}}'
         region: lon1
         #size: c-4   # 4 CPUs optimised
-        size: s-4vcpu-8gb   # 4 CPUs general purpose
+        size: "{{ droplet_size }}"   # 4 CPUs general purpose
         #size: s-2vcpu-4gb
         tags:
           - doaj
@@ -62,7 +64,7 @@
 
     - add_host:
         name: "{{ public_ip }}"
-        groups: app
+        groups: "{{ server_group }}"
 
     - name: Output a summary including login command
       ansible.builtin.debug:
