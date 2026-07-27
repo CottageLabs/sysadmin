@@ -41,7 +41,6 @@
       - background
       - lb
       - kibana
-      - maintenance
       - index_rw1
       - index_rw2
       - index_r1
