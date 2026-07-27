@@ -87,6 +87,10 @@
     droplet_name: doaj-index-rw1
     dns_prefix: index-rw1
     server_group: index
+    opensearch_cluster_name: doaj-index-rw
+    opensearch_seed_hosts:
+      - index-rw1.doaj.cottagelabs.com
+      - index-rw2.doaj.cottagelabs.com
   when: "'index_rw1' in hostvars.localhost.create_types"
 
 - name: Create index server readwrite-2
@@ -95,6 +99,10 @@
     droplet_name: doaj-index-rw2
     dns_prefix: index-rw2
     server_group: index
+    opensearch_cluster_name: doaj-index-rw
+    opensearch_seed_hosts:
+      - index-rw1.doaj.cottagelabs.com
+      - index-rw2.doaj.cottagelabs.com
   when: "'index_rw2' in hostvars.localhost.create_types"
 
 - name: Create index server readonly-1
@@ -103,6 +111,10 @@
     droplet_name: doaj-index-r1
     dns_prefix: index-r1
     server_group: index
+    opensearch_cluster_name: doaj-index-r
+    opensearch_seed_hosts:
+      - index-r1.doaj.cottagelabs.com
+      - index-r2.doaj.cottagelabs.com
   when: "'index_r1' in hostvars.localhost.create_types"
 
 - name: Create index server readonly-2
@@ -111,6 +123,10 @@
     droplet_name: doaj-index-r2
     dns_prefix: index-r2
     server_group: index
+    opensearch_cluster_name: doaj-index-r
+    opensearch_seed_hosts:
+      - index-r1.doaj.cottagelabs.com
+      - index-r2.doaj.cottagelabs.com
   when: "'index_r2' in hostvars.localhost.create_types"
 
 - name: Create app server public-1

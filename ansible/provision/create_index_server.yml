@@ -12,6 +12,9 @@
     dns_prefix: index-rw1
     dns_domain: doaj.cottagelabs.com
     server_group: index
+    opensearch_cluster_name: doaj-index-rw
+    opensearch_seed_hosts: []
+    opensearch_s3_backup: false
 
   tasks:
 
@@ -77,6 +80,9 @@
   vars:
     ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
     ansible_user: "cloo"
+    opensearch_cluster_name: "{{ hostvars.localhost.opensearch_cluster_name }}"
+    opensearch_seed_hosts: "{{ hostvars.localhost.opensearch_seed_hosts }}"
+    opensearch_s3_backup: "{{ hostvars.localhost.opensearch_s3_backup }}"
   tasks:
     - name: Install opensearch
       include_tasks: tasks/install_opensearch.yml
