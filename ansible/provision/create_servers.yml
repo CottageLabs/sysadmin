@@ -14,7 +14,7 @@
 #   # Create an app server with custom name and DNS:
 #   ansible-playbook create_servers.yml -e "server_types=app app_droplet_name=doaj-public-1 app_dns_prefix=public-1" --private-key=~/.ssh/id_rsa -vv
 #
-# Supported server_types: app, lb, test, kibana, static, maintenance
+# Supported server_types: app, lb, test, kibana, static, maintenance, index
 #
 # App server variables (override with -e):
 #   app_droplet_name  - Droplet name (default: doaj-public-3)
@@ -42,13 +42,18 @@
     # By default create all servers; override with -e "server_types=app,lb"
     server_types: "all"
     all_types:
-      - app
-      - app
+      - app1
+      - app2
+      - app3
+      - editor
+      - background
       - lb
-      - test
       - kibana
-      - static
       - maintenance
+      - index_rw1
+      - index_rw2
+      - index_r1
+      - index_r2
 
     # App server variables (override with -e)
     app_droplet_name: doaj-public-3
@@ -74,8 +79,40 @@
         msg: "Will create server(s): {{ create_types | join(', ') }}"
 
 ###############################################################################
-# Import existing playbooks for each server type
+# create servers as per server types
 ###############################################################################
+- name: Create index server readwrite-1
+  ansible.builtin.import_playbook: create_index_server.yml
+  vars:
+    droplet_name: doaj-index-rw1
+    dns_prefix: index-rw1
+    server_group: index
+  when: "'index_rw1' in hostvars.localhost.create_types"
+
+- name: Create index server readwrite-2
+  ansible.builtin.import_playbook: create_index_server.yml
+  vars:
+    droplet_name: doaj-index-rw2
+    dns_prefix: index-rw2
+    server_group: index
+  when: "'index_rw2' in hostvars.localhost.create_types"
+
+- name: Create index server readonly-1
+  ansible.builtin.import_playbook: create_index_server.yml
+  vars:
+    droplet_name: doaj-index-r1
+    dns_prefix: index-r1
+    server_group: index
+  when: "'index_r1' in hostvars.localhost.create_types"
+
+- name: Create index server readonly-2
+  ansible.builtin.import_playbook: create_index_server.yml
+  vars:
+    droplet_name: doaj-index-r2
+    dns_prefix: index-r2
+    server_group: index
+  when: "'index_r2' in hostvars.localhost.create_types"
+
 - name: Create app server public-1
   ansible.builtin.import_playbook: create_app_server.yml
   vars:
