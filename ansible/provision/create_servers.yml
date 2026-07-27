@@ -2,7 +2,6 @@
 # Unified playbook to create one or more DOAJ servers.
 #
 # This playbook calls the existing individual server creation playbooks,
-# keeping things simple and avoiding duplication.
 #
 # Usage:
 #   # Create all servers:
@@ -14,7 +13,6 @@
 #   # Create an app server with custom name and DNS:
 #   ansible-playbook create_servers.yml -e "server_types=app app_droplet_name=doaj-public-1 app_dns_prefix=public-1" --private-key=~/.ssh/id_rsa -vv
 #
-# Supported server_types: app, lb, test, kibana, static, maintenance, index
 #
 # App server variables (override with -e):
 #   app_droplet_name  - Droplet name (default: doaj-public-3)
@@ -23,10 +21,6 @@
 #   app_size          - Droplet size slug (default: s-4vcpu-8gb)
 #   app_git_branch    - Git branch to deploy (default: master)
 #   app_deploy_env    - Deployment environment (default: production)
-#
-# Configuration:
-#   To add or remove servers, simply add or remove import_playbook entries below.
-#   Each entry calls the existing standalone playbook for that server type.
 #
 ---
 
