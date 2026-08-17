@@ -1,182 +1,78 @@
+---
+tags: [moc]
+---
 
-* TODO: export entirety of `cottage labs/` password directory to passbolt
+# Ops Handbook
 
-Arranged by project, with general info.
+Index for Cottage Labs operations documentation. Every project and shared piece of infrastructure below is its own note — open **Graph view** to browse the whole picture as a map, or follow `[[links]]` from here.
 
-## Services
-
-A non-exhaustive list of the services I use day-to-day, the full list is at
-
-* **DigitalOcean** - Virtual Machines (VMs), firewalls, some DNS zones
-* **Amazon AWS** - Virtual Machines, some DNS, S3 buckets, Secrets Manager, IAM users.
-* **Microsoft Azure** - not currently used.
-* **Google Admin Console** - Cottage Labs accounts
-* **Godaddy** - cottagelabs.com domain DNS
+> [!todo] Export the entirety of the `cottage labs/` password directory into Passbolt.
 
 ## Projects
 
-### DOAJ
+Client-facing work.
 
-The main role I fulfil on DOAJ is release manager - I trust I don't need to expand on the full procedures here, but that means we need to take care that releases are stable and on-time.
+- [[DOAJ]]
+- [[RKI MEx]]
+- [[uChicago]]
+- [[JCT]]
+- [[SWORD Wordpress]]
+- [[DeepGreen]]
+- [[EMLO]]
+- [[Imperial Helix]]
 
-#### [Releases to live](https://github.com/DOAJ/doajPM/wiki/How-To:-Deploy-code-to-the-live-server)
+[[DeepGreen]], [[EMLO]], and [[Imperial Helix]] are placeholder notes — details haven't been written up yet. Fill them in as you touch each project.
 
-Releases are generally but not exclusively on a Thursday. There's a checklist to follow for what's necessary before a release goes out. To pay attention to:
+## Internal Infrastructure
 
-* Git flow branch management
-* Release freeze - prepare `develop` in advance and make sure the tests pass and eyeball it.
-* Hold off 
+Services we run for ourselves rather than for a client.
 
-#### [Test Servers](https://github.com/DOAJ/doajPM/wiki/How-to:-Deploy-a-Branch-to-a-Test-Server))
+- [[CL Website]]
+- [[Mattermost]]
+- [[Passbolt]]
+- [[The All Seeing Eye]]
 
-Provision commands are run from the [sysadmin repo](https://github.com/CottageLabs/sysadmin/) directory `sysadmin/ansible/provision`
+[[CL Website]] and [[The All Seeing Eye]] are placeholder notes — details haven't been written up yet.
 
-The following command gets us a new test server for the branch `feature/3991_weekly_email_alert`, with all of its data pulled from the anon import:
+## Where Hosting Occurs
 
-(I can't include AWS credentials here, so they're in passbolt as *Test Server AWS Credentials*)
-```
-ansible-playbook create_test_server.yml --e "droplet_name=3991 install_index=true git_branch=feature/3991_weekly_email_alert aws_profile=doaj-test aws_access_key=<SEE_PASSBOLT> aws_secret_key=<SEE_PASSBOLT>" --private-key=~/.ssh/cl_ed25519
-```
+Who owns the account matters as much as which provider — some projects run entirely under our control, others sit inside a client's own cloud subscription.
 
-And to destroy it:
+| Project | Hosting | Whose account |
+|---|---|---|
+| [[DOAJ]] | [[DigitalOcean]] | Ours — full control |
+| [[RKI MEx]] | RKI's own Kubernetes cluster | Client's — `kubectl` access only |
+| [[uChicago]] | [[AWS]] (EKS) | Ours — full control |
+| [[Imperial Helix]] | [[Azure]] | Client's own subscription |
+| [[JCT]] | [[DigitalOcean]] | Ours |
+| [[SWORD Wordpress]] | [[DigitalOcean]] (via [[cl-docker]]) | Ours |
+| [[Mattermost]] | [[DigitalOcean]] (via [[cl-docker]]) | Ours |
+| [[Passbolt]] | [[DigitalOcean]] (via [[cl-docker]]) | Ours |
+| [[CL Website]] | [[DigitalOcean]] (assumed) | Ours — unconfirmed host |
+| [[DeepGreen]] | Unknown | Unknown |
+| [[EMLO]] | Unknown | Unknown |
+| [[The All Seeing Eye]] | [[DigitalOcean]] (assumed) | Ours — unconfirmed host |
 
-```
-ansible-playbook destroy_test_server.yml --e "droplet_name=3991"
-```
+Rule of thumb: **client-run infrastructure** (RKI, Imperial) means we work inside their cloud account under their terms; **our infrastructure** (everything else) means we provision, patch, and pay for it — mostly [[DigitalOcean]] for smaller/internal projects, with [[AWS]] used where a project needs its own dedicated account.
 
-#### CircleCI / Test Suite
+## Shared Infrastructure
 
-I take it upon myself to fix broken tests periodically.
+- [[DigitalOcean]]
+- [[AWS]]
+- [[Azure]]
+- [[Cloudflare]]
+- [[GoDaddy]]
+- [[cl-docker]]
+- [[Ansible sysadmin repo]]
+- [[CircleCI]]
+- [[GitHub Actions]]
+- [[Kibana]]
+- [[UptimeRobot]]
+- [[Sentry]]
+- **Google Admin Console** — Cottage Labs Google Workspace accounts, no dedicated note yet
 
-#### Docs Repo
+## Company Docs
 
-`STEVE_PAT` is a personal access token that requires my GH account to be active and my involvement in the DOAJ project. Replace if I leave or beforehand with a better mechanism.
-
-#### Add new Sysadmins
-
-In order to use the ansible scripts, their Public Key needs to be uploaded to all machines. An existing sysadmin can do this via the `sysadmin/ott/upload_ssh_key.yml` playbook:
-
-Edit the playbook or supply the key path as an argument (TODO?)
-
-```
-ansible-playbook -i ../doaj-hosts.ini upload_ssh_key.yml
-```
-
-And at any time it should be possible to verify access to all machines with the `ping` module from `sysadmin/ansible`:
-
-```
-ansible -i doaj-hosts.ini all -m ping
-```
-
-You may need to Agree to host key verification numerous times, or log into the machines directly before this succeeds.
-
-### RKI
-
-Runs on RKI's kubernetes cluster and their own block storage (S3 equivalent). We have access via `kubectl` credentials.
-
-### uChicago
-
-Running on our own AWS account using AKS (Amazon Kubernetes Service).
-
-### JCT
-
-Meteor app running in a `screen` session.
-Using old index machine 
-
-### SWORD Wordpress
-
-Running on `cl-docker` - probably requires attention quite soon.
-
-Sends emails via mailgun
-
-### CL Infrastructure
-
-#### Mattermost
-
-DNS: Godaddy -> cl-docker nginx -> container
-Path `/home/cloo/mattermost`
-Exec `docker compose -f docker-compose.yml -f docker-compose.without-nginx.yml up -d`
-
-This runs containerised, automatically on `cl-docker` and is backed up via a `cron` to S3 bucket `cl-mattermost`.
-There's a sysadmin@cottagelabs.com user with full control of the server, so that my account is unprivileged. Login details are in passbolt.
-
-Admin tasks include:
-* Provisioning new users
-* Archiving / hiding old channels
-* Emoji upload
-* Disabling and removing users
-* Upgrading the server (tentatively)
-
-**Disaster recovery:**
-
-Backups are stored in `~/mattermost/backups/` on cl-docker (database dump) and the full `~/mattermost/volumes/` tree (database files, uploads, config, plugins, logs) is synced to S3 bucket `cl-mattermost` via cron. To restore from S3, first pull the backup down:
-
-```bash
-aws --profile cl-docker-rw-mattermost-backups s3 sync s3://cl-mattermost ~/mattermost
-```
-
-**1. Start only the database container**
-```bash
-docker compose -f ~/mattermost/docker-compose.yml -f ~/mattermost/docker-compose.without-nginx.yml up -d postgres
-```
-
-**2. Restore the database**
-```bash
-docker cp ~/mattermost/backups/mattermost-YYYYMMDD.sql mattermost-postgres-1:/tmp/
-docker exec mattermost-postgres-1 bash -c 'psql -U $POSTGRES_USER $POSTGRES_DB < /tmp/mattermost-YYYYMMDD.sql'
-```
-
-**3. Bring up the full stack**
-```bash
-docker compose -f ~/mattermost/docker-compose.yml -f ~/mattermost/docker-compose.without-nginx.yml up -d
-```
-
-Note: the `volumes/` tree synced to S3 should contain all file uploads and config. The database restore and the volumes together constitute a full recovery. **This has not been test-restored** — treat as unverified until proven.
-
-#### Passbolt
-
-DNS: Godaddy -> cl-docker nginx -> container
-Path `/home/cloo/passbolt`
-Exec `docker compose -f docker-compose-ce.yaml up -d`
-
-This runs on cl-docker similarly to mattermost, and the backup method is nearly the same, i.e. a cronjob that pushes to S3. Its bucket is `cl-passbolt` and there's a sysadmin user sysadmin@cottagelabs.com to manage the service. 
-
-**Admin tasks include:**
-* Provisioning new users
-* Setting up shared directories
-* Resetting user passwords
-
-**Disaster recovery:**
-
-Backups are stored in `~/passbolt/backups/` on cl-docker and synced to S3 bucket `cl-passbolt`. Each daily backup produces three items:
-- `passbolt-YYYYMMDD.sql` — full database dump
-- `gpg-YYYYMMDD/` — server GPG key pair
-- `jwt-YYYYMMDD/` — JWT key pair (for API/browser extension auth)
-
-To restore on a fresh host:
-
-**1. Start only the database container**
-```bash
-docker compose -f ~/passbolt/docker-compose-ce.yaml up -d db
-```
-
-**2. Restore the database**
-```bash
-docker cp ~/passbolt/backups/passbolt-YYYYMMDD.sql passbolt-db-1:/tmp/
-docker exec passbolt-db-1 bash -c 'mysql -u passbolt -p<PASSWORD> passbolt < /tmp/passbolt-YYYYMMDD.sql'
-```
-
-**3. Restore the GPG keys**
-```bash
-docker cp ~/passbolt/backups/gpg-YYYYMMDD/. passbolt-passbolt-1:/etc/passbolt/gpg/
-```
-
-**4. Restore the JWT keys**
-```bash
-docker cp ~/passbolt/backups/jwt-YYYYMMDD/. passbolt-passbolt-1:/etc/passbolt/jwt/
-```
-
-**5. Bring up the full stack**
-```bash
-docker compose -f ~/passbolt/docker-compose-ce.yaml up -d
-```
+- [[vm-os-inventory]]
+- [[cyber_essentials_cl_guidance]]
+- [[remote_worker_hardware_inventory]]
