@@ -20,7 +20,11 @@ There is also `ansible/purge-cloudflare.yml` for cache purges.
 ## Used by
 
 - [[DOAJ]]
+- [[Mattermost]] — `cottagelabs.com` zone, [[GoDaddy]] holds NS only
+- [[Passbolt]] — `cottagelabs.com` zone, [[GoDaddy]] holds NS only
+- [[CL Website]] — `cottagelabs.com` zone, [[GoDaddy]] holds NS only
 
 ## Related
 
 - [[Ansible sysadmin repo]]
+- [[GoDaddy]]

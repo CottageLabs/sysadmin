@@ -9,7 +9,7 @@ Team password manager, containerised on [[cl-docker]]. Source of truth for most 
 
 ## Infrastructure & Access
 
-- DNS: [[GoDaddy]] → `cl-docker` nginx → container
+- DNS: [[GoDaddy]] (NS) → [[Cloudflare]] → `cl-docker` nginx → container
 - Path: `/home/cloo/passbolt`
 - Start: `docker compose -f docker-compose-ce.yaml up -d`
 - Runs alongside [[Mattermost]] on the same host, with the same pattern — a `sysadmin@cottagelabs.com` user has full control so Steve's own account stays unprivileged.
@@ -41,6 +41,8 @@ docker cp ~/passbolt/backups/passbolt-YYYYMMDD.sql passbolt-db-1:/tmp/
 docker exec passbolt-db-1 bash -c 'mysql -u passbolt -p<PASSWORD> passbolt < /tmp/passbolt-YYYYMMDD.sql'
 ```
 
+Note that the missing space in `-p<PASSWORD>` is intentional - if you include the space it will be interpreted as part of the password itself.
+
 **3. Restore the GPG keys**
 
 ```bash
@@ -59,6 +61,14 @@ docker cp ~/passbolt/backups/jwt-YYYYMMDD/. passbolt-passbolt-1:/etc/passbolt/jw
 docker compose -f ~/passbolt/docker-compose-ce.yaml up -d
 ```
 
+### crontab
+
+```
+0 1 * * * docker exec passbolt-db-1 mysqldump -u passbolt -p<PASSWORD> passbolt > ~/passbolt/backups/passbolt-$(date +\%Y\%m\%d).sql && docker cp passbolt-passbolt-1:/etc/passbolt/gpg ~/passbolt/backups/gpg-$(date +\%Y\%m\%d) && docker cp passbolt-passbolt-1:/etc/passbolt/jwt ~/passbolt/backups/jwt-$(date +\%Y\%m\%d)
+
+10 1 * * * aws --profile cl-docker-rw-passbolt-backups s3 sync ~/passbolt s3://cl-passbolt
+```
+
 ## Monitoring
 
 TODO
@@ -73,5 +83,6 @@ TODO
 
 - [[cl-docker]]
 - [[GoDaddy]]
+- [[Cloudflare]]
 - [[AWS]]
 - [[Mattermost]]

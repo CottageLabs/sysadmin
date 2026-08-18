@@ -8,7 +8,7 @@ Shared Cottage Labs host running several internal services as Docker containers,
 
 ## DNS pattern
 
-[[GoDaddy]] → `cl-docker` nginx → container (per service, path-routed or by subdomain)
+[[GoDaddy]] (NS) → [[Cloudflare]] → `cl-docker` nginx → container (per service, path-routed or by subdomain)
 
 ## Runs
 
@@ -20,3 +20,4 @@ Shared Cottage Labs host running several internal services as Docker containers,
 
 - [[DigitalOcean]]
 - [[GoDaddy]]
+- [[Cloudflare]]

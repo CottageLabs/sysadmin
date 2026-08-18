@@ -7,7 +7,7 @@ status: active
 
 > [!todo] No details found anywhere in the sysadmin repo yet — this note is a bare skeleton. Fill in hosting, deploy process, backups, and contacts.
 
-The `cottagelabs.com` marketing/company website. DNS is on [[GoDaddy]] (per the general company services list).
+The `cottagelabs.com` marketing/company website. [[GoDaddy]] holds the nameserver (NS) records only — actual DNS (records, WAF, cache) is managed on [[Cloudflare]] since the recent migration.
 
 ## Infrastructure & Access
 
@@ -32,5 +32,6 @@ TODO
 ## Related
 
 - [[GoDaddy]]
+- [[Cloudflare]]
 - [[DigitalOcean]]
 - [[UptimeRobot]]

@@ -9,7 +9,7 @@ Internal chat, containerised on [[cl-docker]].
 
 ## Infrastructure & Access
 
-- DNS: [[GoDaddy]] → `cl-docker` nginx → container
+- DNS: [[GoDaddy]] (NS) → [[Cloudflare]] → `cl-docker` nginx → container
 - Path: `/home/cloo/mattermost`
 - Start: `docker compose -f docker-compose.yml -f docker-compose.without-nginx.yml up -d`
 - A `sysadmin@cottagelabs.com` user has full control of the server, so Steve's own account stays unprivileged. Login details in Passbolt.
@@ -49,6 +49,14 @@ docker compose -f ~/mattermost/docker-compose.yml -f ~/mattermost/docker-compose
 
 The `volumes/` tree synced to S3 should contain all file uploads and config. The database restore plus the volumes together constitute a full recovery. **This has not been test-restored** — treat as unverified until proven.
 
+### crontab
+
+```
+1 0 * * * docker exec mattermost-postgres-1 bash -c 'pg_dump $POSTGRES_DB -U $POSTGRES_USER > /var/lib/postgresql/data/backups/$POSTGRES_DB-$(date +%Y%m%d).sql' && docker cp mattermost-postgres-1:/var/lib/postgresql/data/backups/mattermost-$(date +%Y%m%d).sql ~/mattermost/backups/
+
+11 0 * * * sudo aws --profile cl-docker-rw-mattermost-backups s3 sync ~/mattermost s3://cl-mattermost
+```
+
 ## Monitoring
 
 TODO
@@ -65,5 +73,6 @@ TODO
 
 - [[cl-docker]]
 - [[GoDaddy]]
+- [[Cloudflare]]
 - [[AWS]]
 - [[Passbolt]] — shares a host and an admin pattern with this service
