@@ -32,7 +32,7 @@ Services we run for ourselves rather than for a client.
 - [[Passbolt]]
 - [[The All Seeing Eye]]
 
-[[CL Website]] and [[The All Seeing Eye]] are placeholder notes — details haven't been written up yet.
+[[The All Seeing Eye]] is still a placeholder note — details haven't been written up yet.
 
 ## Where Hosting Occurs
 
@@ -48,7 +48,7 @@ Who owns the account matters as much as which provider — some projects run ent
 | [[SWORD Wordpress]] | [[DigitalOcean]] (via [[cl-docker]]) | Ours |
 | [[Mattermost]] | [[DigitalOcean]] (via [[cl-docker]]) | Ours |
 | [[Passbolt]] | [[DigitalOcean]] (via [[cl-docker]]) | Ours |
-| [[CL Website]] | [[DigitalOcean]] (assumed) | Ours — unconfirmed host |
+| [[CL Website]] | [[DigitalOcean]] (via [[cl-docker]]) | Ours |
 | [[DeepGreen]] | Unknown | Unknown |
 | [[EMLO]] | Unknown | Unknown |
 | [[The All Seeing Eye]] | [[DigitalOcean]] (assumed) | Ours — unconfirmed host |

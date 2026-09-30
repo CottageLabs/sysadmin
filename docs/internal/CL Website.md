@@ -5,21 +5,20 @@ status: active
 
 # CL Website
 
-> [!todo] No details found anywhere in the sysadmin repo yet — this note is a bare skeleton. Fill in hosting, deploy process, backups, and contacts.
-
-The `cottagelabs.com` marketing/company website. [[GoDaddy]] holds the nameserver (NS) records only — actual DNS (records, WAF, cache) is managed on [[Cloudflare]] since the recent migration.
+The `cottagelabs.com` marketing/company website.
 
 ## Infrastructure & Access
 
-Likely a [[DigitalOcean]] VM, per our general hosting pattern for smaller/internal projects — unconfirmed, no specific host identified yet.
+- DNS: [[GoDaddy]] (NS) → [[Cloudflare]] → `cl-docker` nginx → site
+- Runs on [[cl-docker]], but not containerised — it's a plain static HTML site (built with Pelican) served directly. Source: [github.com/CottageLabs/website](https://github.com/CottageLabs/website), see that repo's README for the Pelican build/deploy details.
 
 ## Deploy / Release Process
 
-TODO
+Deployed via a git hook against a headless repo on the server: pushing to the `production` remote (`git push production master`) from a dev machine triggers the deploy.
 
 ## Backup & Disaster Recovery
 
-TODO
+No separate backup process — the git repo itself is the backup, since the site holds no database/dynamic data.
 
 ## Monitoring
 
@@ -27,11 +26,12 @@ TODO
 
 ## Admin Tasks & Contacts
 
-TODO
+Steve and Richard.
 
 ## Related
 
 - [[GoDaddy]]
 - [[Cloudflare]]
+- [[cl-docker]]
 - [[DigitalOcean]]
 - [[UptimeRobot]]

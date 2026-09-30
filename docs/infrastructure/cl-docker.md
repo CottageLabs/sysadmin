@@ -15,6 +15,7 @@ Shared Cottage Labs host running several internal services as Docker containers,
 - [[Mattermost]] — `~/mattermost`, `docker compose -f docker-compose.yml -f docker-compose.without-nginx.yml up -d`
 - [[Passbolt]] — `~/passbolt`, `docker compose -f docker-compose-ce.yaml up -d`
 - [[SWORD Wordpress]]
+- [[CL Website]] — not containerised, a plain static (Pelican-built) site served directly, deployed via a git push hook
 
 ## Related
 
