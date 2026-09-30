@@ -1,0 +1,174 @@
+#
+# Unified playbook to create one or more DOAJ servers.
+#
+# Usage:
+#   # Create all servers:
+#   ansible-playbook create_servers.yml --private-key=~/.ssh/id_rsa -vv
+#
+#   # Create only specific server types (comma-separated):
+#   ansible-playbook create_servers.yml -e "server_types=app,lb" --private-key=~/.ssh/id_rsa -vv
+#
+#   # Create an app server with custom name and DNS:
+#   ansible-playbook create_servers.yml -e "server_types=app app_droplet_name=doaj-public-1 app_dns_prefix=public-1" --private-key=~/.ssh/id_rsa -vv
+#
+#
+# App server variables (override with -e):
+#   app_droplet_name  - Droplet name (default: doaj-public-3)
+#   app_dns_prefix    - DNS prefix for <prefix>.doaj.cottagelabs.com (default: public-3)
+#   app_dns_domain    - DNS domain (default: doaj.cottagelabs.com)
+#   app_size          - Droplet size slug (default: s-4vcpu-8gb)
+#   app_git_branch    - Git branch to deploy (default: master)
+#   app_deploy_env    - Deployment environment (default: production)
+#
+---
+
+###############################################################################
+# Play 0: Determine which servers to create
+###############################################################################
+- name: Determine which servers to create
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    # By default create all servers; override with -e "server_types=app,lb"
+    server_types: "all"
+    all_types:
+      - app1
+      - app2
+      - app3
+      - editor
+      - background
+      - lb
+      - kibana
+      - index_rw1
+      - index_rw2
+      - index_r1
+      - index_r2
+
+    # App server variables (override with -e)
+    app_droplet_name: doaj-public-3
+    app_dns_prefix: public-3
+    app_dns_domain: doaj.cottagelabs.com
+    app_size: s-4vcpu-8gb
+    app_git_branch: master
+    app_deploy_env: production
+
+  tasks:
+    - name: Set list of server types to create
+      ansible.builtin.set_fact:
+        create_types: "{{ (server_types == 'all') | ternary(all_types, server_types.split(',') | map('trim') | list) }}"
+        app_droplet_name: "{{ app_droplet_name }}"
+        app_dns_prefix: "{{ app_dns_prefix }}"
+        app_dns_domain: "{{ app_dns_domain }}"
+        app_size: "{{ app_size }}"
+        app_git_branch: "{{ app_git_branch }}"
+        app_deploy_env: "{{ app_deploy_env }}"
+
+    - name: Show which servers will be created
+      ansible.builtin.debug:
+        msg: "Will create server(s): {{ create_types | join(', ') }}"
+
+###############################################################################
+# create servers as per server types
+###############################################################################
+- name: Create index server readwrite-1
+  ansible.builtin.import_playbook: create_index_server.yml
+  vars:
+    droplet_name: doaj-index-rw1
+    dns_prefix: index-rw1
+    server_group: index
+    opensearch_cluster_name: doaj-index-rw
+    opensearch_seed_hosts:
+      - index-rw1.doaj.cottagelabs.com
+      - index-rw2.doaj.cottagelabs.com
+  when: "'index_rw1' in hostvars.localhost.create_types"
+
+- name: Create index server readwrite-2
+  ansible.builtin.import_playbook: create_index_server.yml
+  vars:
+    droplet_name: doaj-index-rw2
+    dns_prefix: index-rw2
+    server_group: index
+    opensearch_cluster_name: doaj-index-rw
+    opensearch_seed_hosts:
+      - index-rw1.doaj.cottagelabs.com
+      - index-rw2.doaj.cottagelabs.com
+  when: "'index_rw2' in hostvars.localhost.create_types"
+
+- name: Create index server readonly-1
+  ansible.builtin.import_playbook: create_index_server.yml
+  vars:
+    droplet_name: doaj-index-r1
+    dns_prefix: index-r1
+    server_group: index
+    opensearch_cluster_name: doaj-index-r
+    opensearch_seed_hosts:
+      - index-r1.doaj.cottagelabs.com
+      - index-r2.doaj.cottagelabs.com
+  when: "'index_r1' in hostvars.localhost.create_types"
+
+- name: Create index server readonly-2
+  ansible.builtin.import_playbook: create_index_server.yml
+  vars:
+    droplet_name: doaj-index-r2
+    dns_prefix: index-r2
+    server_group: index
+    opensearch_cluster_name: doaj-index-r
+    opensearch_seed_hosts:
+      - index-r1.doaj.cottagelabs.com
+      - index-r2.doaj.cottagelabs.com
+  when: "'index_r2' in hostvars.localhost.create_types"
+
+- name: Create app server public-1
+  ansible.builtin.import_playbook: create_app_server.yml
+  vars:
+    droplet_name: doaj-public-1
+    dns_prefix: public-1
+    certbot_domain: public-1.doaj.cottagelabs.com
+    server_group: app
+  when: "'app1' in hostvars.localhost.create_types"
+
+- name: Create app server public-2
+  ansible.builtin.import_playbook: create_app_server.yml
+  vars:
+    droplet_name: doaj-public-2
+    dns_prefix: public-2
+    certbot_domain: public-2.doaj.cottagelabs.com
+    server_group: app
+  when: "'app2' in hostvars.localhost.create_types"
+
+- name: Create app server public-3
+  ansible.builtin.import_playbook: create_app_server.yml
+  vars:
+    droplet_name: doaj-public-3
+    dns_prefix: public-3
+    certbot_domain: public-3.doaj.cottagelabs.com
+    server_group: app
+  when: "'app3' in hostvars.localhost.create_types"
+
+- name: Create editor server editor-1
+  ansible.builtin.import_playbook: create_app_server.yml
+  vars:
+    droplet_name: doaj-editor-1
+    dns_prefix: public-3
+    certbot_domain: editor-1.doaj.cottagelabs.com
+    server_group: app
+  when: "'editor' in hostvars.localhost.create_types"
+
+- name: Create background server
+  ansible.builtin.import_playbook: create_app_server.yml
+  vars:
+    droplet_name: doaj-background-1
+    dns_prefix: background-1
+    certbot_domain: background-1.doaj.cottagelabs.com
+    server_group: background
+  when: "'background' in hostvars.localhost.create_types"
+
+- name: Create load balancer server
+  ansible.builtin.import_playbook: create_lb_server.yml
+  when: "'lb' in hostvars.localhost.create_types"
+
+- name: Create kibana server
+  ansible.builtin.import_playbook: create_kibana_system.yml
+  when: "'kibana' in hostvars.localhost.create_types"

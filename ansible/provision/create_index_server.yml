@@ -1,33 +1,33 @@
 ---
-- name: Bring up a new DOAJ application server
+- name: Bring up a new DOAJ index (OpenSearch) server
   hosts: localhost
   connection: local
   gather_facts: true
 
   vars:
     digitalocean_token: "{{ lookup('ansible.builtin.env', 'DIGITALOCEAN_TOKEN') }}"
-    server_config: "{{ lookup('ansible.builtin.file', '../../cloud-init_userdata/doaj-app_cloud-config.txt') }}"
-    droplet_size: s-4vcpu-8gb
-    droplet_name: doaj-public-3
-    # We initially want this server accessible via public2.doaj.cottagelabs.com
-    dns_prefix: public-3
+    server_config: "{{ lookup('ansible.builtin.file', '../../cloud-init_userdata/doaj-opensearch_cloud-config.txt') }}"
+    droplet_size: m3-4vcpu-32gb
+    droplet_name: doaj-index-rw1
+    dns_prefix: index-rw1
     dns_domain: doaj.cottagelabs.com
-    server_group: app
+    server_group: index
+    opensearch_cluster_name: doaj-index-rw
+    opensearch_seed_hosts: []
+    opensearch_s3_backup: false
 
   tasks:
 
-    - name: Create Droplet with root access Steve and Rama, using app server userdata
+    - name: Create Droplet with root access Steve and Rama, using opensearch server userdata
       digitalocean.cloud.droplet:
         state: present
         token: "{{ digitalocean_token }}"
-        name: '{{droplet_name}}'
+        name: '{{ droplet_name }}'
         region: lon1
-        #size: c-4   # 4 CPUs optimised
-        size: "{{ droplet_size }}"   # 4 CPUs general purpose
-        #size: s-2vcpu-4gb
+        size: "{{ droplet_size }}"
         tags:
           - doaj
-          - firewall-doaj-app
+          - firewall-doaj-index
         image: ubuntu-22-04-x64
         # Run task list_ssh_keys.yml to get the key IDs
         ssh_keys: ["30242381", "40223915"]
@@ -40,7 +40,7 @@
 
     - name: Get info on our new droplet to get the IP
       digitalocean.cloud.droplets_info:
-        name: '{{droplet_name}}'
+        name: '{{ droplet_name }}'
       register: dropletinfo
 
     - name: Parse out the assigned IP
@@ -68,20 +68,21 @@
 
     - name: Output a summary including login command
       ansible.builtin.debug:
-        msg: "App server created: cloo@{{public_ip}}"
+        msg: "Index server created: cloo@{{ public_ip }}"
 
     - name: Give 7 minutes for the server to be up
       pause:
         minutes: 7
 
-- name: Run initial setup
-  import_playbook: server_initial_setup.yml
+- name: Install OpenSearch on the new index server
+  hosts: index
+  gather_facts: yes
   vars:
-    target: "{{ hostvars.localhost.public_ip }}"
-    server_name: "{{ hostvars.localhost.remote_host_name }}"
-    certbot_domain: public-3.doaj.cottagelabs.com
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
     ansible_user: "cloo"
-    install_index: false
-    git_branch: "master"
-    deploy_env: production
-    skip_latest_dns: true
+    opensearch_cluster_name: "{{ hostvars.localhost.opensearch_cluster_name }}"
+    opensearch_seed_hosts: "{{ hostvars.localhost.opensearch_seed_hosts }}"
+    opensearch_s3_backup: "{{ hostvars.localhost.opensearch_s3_backup }}"
+  tasks:
+    - name: Install opensearch
+      include_tasks: tasks/install_opensearch.yml

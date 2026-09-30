@@ -1,0 +1,93 @@
+#
+# Set up cross-cluster replication from the read-write (leader) OpenSearch cluster
+# to the read-only (follower) OpenSearch cluster.
+#
+# This playbook should be run after all 4 index servers are provisioned and
+# OpenSearch is running on each.
+#
+# Usage:
+#   ansible-playbook -i ../doaj-hosts.ini setup_index_cluster_replication.yml --private-key=~/.ssh/cl-doaj -vv
+#
+# To replicate a specific index, override with:
+#   ansible-playbook -i ../doaj-hosts.ini setup_index_cluster_replication.yml -e "replicate_index=my-index" --private-key=~/.ssh/cl-doaj -vv
+#
+---
+
+- name: Configure the read-only cluster to replicate from the read-write cluster
+  hosts: opensearch-r[0]
+  gather_facts: yes
+  vars:
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+    ansible_user: "cloo"
+    # The read-write (leader) cluster seed host - uses the private network interface
+    leader_seed_host: "index-rw1.doaj.cottagelabs.com:9300"
+    leader_cluster_alias: "doaj-index-rw"
+    replicate_index: ""
+
+  tasks:
+    - name: Get the private IP of this node for API calls
+      ansible.builtin.set_fact:
+        opensearch_api: "http://{{ ansible_eth1.ipv4.address }}:9200"
+
+    - name: Register the leader (read-write) cluster on the follower (read-only) cluster
+      ansible.builtin.uri:
+        url: "{{ opensearch_api }}/_cluster/settings"
+        method: PUT
+        body_format: json
+        body:
+          persistent:
+            cluster:
+              remote:
+                "{{ leader_cluster_alias }}":
+                  seeds:
+                    - "{{ leader_seed_host }}"
+        status_code: 200
+      register: cluster_settings_result
+
+    - name: Show cluster settings result
+      ansible.builtin.debug:
+        var: cluster_settings_result.json
+
+    - name: Start replication for a specific index
+      ansible.builtin.uri:
+        url: "{{ opensearch_api }}/_plugins/_replication/{{ replicate_index }}/_start"
+        method: PUT
+        body_format: json
+        body:
+          remote_cluster: "{{ leader_cluster_alias }}"
+          remote_index: "{{ replicate_index }}"
+        status_code: 200
+      when: replicate_index | length > 0
+      register: replication_result
+
+    - name: Show replication result
+      ansible.builtin.debug:
+        var: replication_result.json
+      when: replicate_index | length > 0
+
+- name: Set the read-only cluster to read-only mode
+  hosts: opensearch-r[0]
+  gather_facts: yes
+  vars:
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+    ansible_user: "cloo"
+
+  tasks:
+    - name: Get the private IP of this node for API calls
+      ansible.builtin.set_fact:
+        opensearch_api: "http://{{ ansible_eth1.ipv4.address }}:9200"
+
+    - name: Set cluster to read-only mode
+      ansible.builtin.uri:
+        url: "{{ opensearch_api }}/_cluster/settings"
+        method: PUT
+        body_format: json
+        body:
+          persistent:
+            cluster.blocks.read_only: true
+        status_code: 200
+      register: readonly_result
+
+    - name: Show read-only setting result
+      ansible.builtin.debug:
+        var: readonly_result.json
