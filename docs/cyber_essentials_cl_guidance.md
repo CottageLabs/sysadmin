@@ -26,29 +26,35 @@ This document provides guidance for developers using their own devices (BYOD) to
 
 ## Network Security
 
-### Router and Network Equipment Security
+### Home Router and Network Equipment (Recommended)
+Home routers not supplied by Cottage Labs are outside the scope of our Cyber Essentials certification - the software firewall on your device (below) is the required control. The following is still strongly recommended good practice:
 - **Default Passwords**: Change all default administrator passwords on routers, switches, and network equipment
 - **Strong Authentication**: Use strong, unique passwords (minimum 12 characters) for all network device admin accounts
 - **Firmware Updates**: Keep router and network equipment firmware updated to latest stable versions
 - **Remote Management**: Disable remote management features unless absolutely necessary
-- **Internet-Facing Management**: Router management interfaces and firewall configuration must NOT be accessible from the internet - management should only be possible from the local network
+- **Internet-Facing Management**: Router management interfaces and firewall configuration should not be accessible from the internet - management should only be possible from the local network
 - **WPS**: Disable WPS (Wi-Fi Protected Setup) on wireless routers
 - **Guest Networks**: Use separate guest networks for visitors, isolated from business network
 
-### Software Firewalls
+### Software Firewalls (Required)
 - **Windows**: Windows Defender Firewall must be enabled and properly configured
 - **macOS**: Built-in firewall must be activated
-- **Linux**: Configure and enable ufw, iptables, or equivalent firewall solution
-- **Configuration**: Default deny incoming connections, allow only necessary outbound traffic
+- **Linux**: ufw is installed but **disabled by default** on Ubuntu - enable it with `sudo ufw enable` and confirm that `sudo ufw status` shows `Status: active` (or use an equivalent, active iptables/nftables ruleset)
+- **Configuration**: Default deny incoming connections; outbound traffic may be allowed
 - **Third-party Firewalls**: If using third-party solutions, ensure they are kept updated
 
 ## User Account Management
 
-### Separate User and Administrator Accounts
-- **Daily Use Account**: Use a standard user account for day-to-day work
-- **Administrator Account**: Maintain a separate administrator account for system changes
-- **Privilege Escalation**: Use sudo/Run as Administrator only when necessary
-- **Account Naming**: Use descriptive names that distinguish between user and admin accounts
+### Administrator Privileges
+- **Elevation Only When Needed**: Carry out administrative tasks (installing software, changing system settings) only through the operating system's elevation prompt - UAC on Windows, administrator authentication on macOS, `sudo` on Linux
+- **Keep Prompts Enabled**: Do not disable UAC, and do not configure passwordless (`NOPASSWD`) sudo for your user account
+- **Everyday Use**: Do not run browsers, email or other everyday applications with administrator privileges
+- **Separate Admin Account (Optional)**: A separate administrator account for system changes is recommended but not required on BYOD devices
+
+### Multi-Factor Authentication (Required)
+- **All Work Accounts**: MFA must be enabled on every cloud service account used for Cottage Labs work
+- **Google Sign-in**: Where a service offers "Sign in with Google", use your Cottage Labs Google account, which is protected by MFA
+- **Services Without MFA**: If a service you need does not offer MFA, tell the systems administration team before using it
 
 ### Password Requirements
 
@@ -74,11 +80,12 @@ This document provides guidance for developers using their own devices (BYOD) to
 - **Biometric Authentication**: Use fingerprint, face recognition, or similar where available
 - **Sleep/Hibernate**: Configure system to require authentication after sleep/hibernate
 
-### Anti-malware Protection
-- **Installation Required**: Install reputable anti-malware software on all devices
-- **Real-time Protection**: Enable real-time scanning and protection
-- **Regular Updates**: Ensure malware definitions are updated automatically
-- **Regular Scans**: Perform full system scans weekly
+### Malware Protection
+Every device must be protected by anti-malware software, or by application allow listing (only approved, signed applications from approved sources), as appropriate to its operating system:
+- **Windows**: Microsoft Defender Antivirus must be enabled with real-time protection and automatic definition updates, and Microsoft Defender SmartScreen enabled to block malicious websites
+- **macOS**: Keep the built-in XProtect and Gatekeeper protections enabled and automatic security updates turned on
+- **Linux**: Protected by application allow listing - only install applications from the approved list and approved sources (see Application Management). Anti-malware software such as ClamAV is optional
+- **Browsers**: Keep Safe Browsing (Chrome/Chromium) or Deceptive Content and Dangerous Software Protection (Firefox) enabled
 - **Mobile Devices**: Only install apps from official app stores (Google Play, Apple App Store)
 
 ## Application Management
@@ -96,13 +103,29 @@ This document provides guidance for developers using their own devices (BYOD) to
   - Microsoft Store (Windows)
   - Mac App Store (macOS)
   - Official distribution repositories (Linux: apt, yum, dnf, etc.)
+  - The Snap Store (Linux)
+  - Signed vendor package repositories added following the vendor's official instructions (e.g. Google Chrome, Visual Studio Code, Docker)
 - **Browser Extensions**: Only from official browser extension stores (Chrome Web Store, Firefox Add-ons, etc.)
+- **Development Dependencies**: Libraries and packages installed for project work from official package registries (e.g. PyPI, npm) are permitted
 
 #### Code Signing Verification
 - **Digital Signatures**: All installed software must have valid digital signatures from trusted publishers
 - **Unsigned Software**: Installation of unsigned or self-signed software is prohibited unless explicitly approved by the systems administration team
 - **Verification Process**: Check publisher certificates before installation on desktop systems
 - **Warning Prompts**: Do not bypass operating system warnings about unsigned or untrusted software
+- **Linux Specifics**: Do not install manually downloaded `.deb` packages, AppImages, or `curl | bash` style install scripts unless approved by the systems administration team
+
+### Approved Applications
+Only applications on this list (plus software supplied as part of a supported operating system) may be installed on devices used for Cottage Labs work. The list is maintained by the systems administration team - ask them to add anything you need.
+
+- **Browsers**: Mozilla Firefox, Google Chrome, Chromium, Microsoft Edge, Safari
+- **Email**: Gmail (web), Mozilla Thunderbird, Apple Mail
+- **Office**: Google Workspace (web), Microsoft Office, LibreOffice, WPS Office
+- **Development**: Visual Studio Code, Git, Docker, language runtimes and their package managers (e.g. Python, Node.js), terminal emulators and SSH clients
+- **Communication**: Zoom, Slack, Discord, Mattermost
+- **Security**: Passbolt, Google Authenticator (or another reputable authenticator app)
+
+*Approved applications list last reviewed: 2026-10-14*
 
 #### Prohibited Sources
 - **Third-party App Stores**: No sideloading or alternative app stores (e.g., APK files from websites)
@@ -149,13 +172,15 @@ This document provides guidance for developers using their own devices (BYOD) to
 
 - [ ] Operating system is current and supported
 - [ ] Automatic security updates enabled
-- [ ] Router/network equipment default passwords changed
-- [ ] Router firmware updated to latest version
-- [ ] Software firewall activated and configured
-- [ ] Separate user and administrator accounts created
+- [ ] Router/network equipment default passwords changed (recommended)
+- [ ] Router firmware updated to latest version (recommended)
+- [ ] Software firewall activated and configured (Linux: `sudo ufw status` shows `active`)
+- [ ] Elevation prompts (UAC / sudo password) left enabled
+- [ ] MFA enabled on all work accounts
 - [ ] Strong passwords/PINs implemented
 - [ ] Automatic screen lock configured (≤10 minutes)
-- [ ] Anti-malware software installed and updated
+- [ ] Windows/macOS: built-in anti-malware enabled and updating
+- [ ] Only approved applications from approved sources installed
 - [ ] Unnecessary applications removed
 - [ ] Emergency contact information saved
 - [ ] Device security features (biometrics) enabled where available
@@ -166,4 +191,4 @@ For questions about this guidance or assistance with implementation, contact the
 
 ---
 
-*This document supports Cottage Labs' UK Cyber Essentials certification requirements. Last updated: 2025-10-09*
+*This document supports Cottage Labs' UK Cyber Essentials certification requirements. Last updated: 2026-10-14*
