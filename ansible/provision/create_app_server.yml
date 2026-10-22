@@ -1,3 +1,4 @@
+# ansible-playbook create_app_server.yml -e "droplet_name=doaj-public-a droplet_size=s-4vcpu-8gb aws_profile=doaj-app aws_access_key=<key> aws_secret_key=<key>" --private-key=~/.ssh/id_rsa
 ---
 - name: Bring up a new DOAJ application server
   hosts: localhost
@@ -7,9 +8,10 @@
   vars:
     digitalocean_token: "{{ lookup('ansible.builtin.env', 'DIGITALOCEAN_TOKEN') }}"
     server_config: "{{ lookup('ansible.builtin.file', '../../cloud-init_userdata/doaj-app_cloud-config.txt') }}"
-    droplet_name: doaj-public-3
-    # We initially want this server accessible via public2.doaj.cottagelabs.com
-    dns_prefix: public-3
+    droplet_name: doaj-public-a
+    droplet_size: s-4vcpu-8gb   # 4 CPUs general purpose; c-4 is 4 CPUs optimised, s-2vcpu-4gb for editor
+    # We initially want this server accessible via e.g. public-a.doaj.cottagelabs.com
+    dns_prefix: "{{ droplet_name | regex_replace('^doaj-', '') }}"
     dns_domain: doaj.cottagelabs.com
 
   tasks:
@@ -20,13 +22,11 @@
         token: "{{ digitalocean_token }}"
         name: '{{droplet_name}}'
         region: lon1
-        #size: c-4   # 4 CPUs optimised
-        size: s-4vcpu-8gb   # 4 CPUs general purpose
-        #size: s-2vcpu-4gb
+        size: '{{ droplet_size }}'
         tags:
           - doaj
           - firewall-doaj-app
-        image: ubuntu-22-04-x64
+        image: ubuntu-24-04-x64
         # Run task list_ssh_keys.yml to get the key IDs
         ssh_keys: ["30242381", "40223915"]
         ipv6: true
@@ -44,6 +44,7 @@
     - name: Parse out the assigned IP
       ansible.builtin.set_fact:
         public_ip: "{{ dropletinfo['droplets'][0]['networks']['v4'] | selectattr('type', '==', 'public') | map(attribute='ip_address') | first }}"
+        private_ip: "{{ dropletinfo['droplets'][0]['networks']['v4'] | selectattr('type', '==', 'private') | map(attribute='ip_address') | first }}"
         droplet_id: "{{ dropletinfo['droplets'][0]['id'] }}"
 
     - name: Create domain A record
@@ -66,7 +67,7 @@
 
     - name: Output a summary including login command
       ansible.builtin.debug:
-        msg: "App server created: cloo@{{public_ip}}"
+        msg: "App server created: cloo@{{public_ip}} ({{ dns_prefix }}.{{ dns_domain }}), private IP for nginx upstreams: {{ private_ip }}"
 
     - name: Give 7 minutes for the server to be up
       pause:
@@ -77,9 +78,8 @@
   vars:
     target: "{{ hostvars.localhost.public_ip }}"
     server_name: "{{ hostvars.localhost.remote_host_name }}"
-    certbot_domain: public-3.doaj.cottagelabs.com
     ansible_user: "cloo"
     install_index: false
     git_branch: "master"
     deploy_env: production
-    skip_latest_dns: true
+    install_nginx: false # the load balancer proxies straight to gunicorn on :5050

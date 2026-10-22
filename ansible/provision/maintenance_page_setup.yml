@@ -9,6 +9,17 @@
   hosts: "{{ target if target is defined and target | length > 0 else 'all:!index' }}" #doaj-editor-1 #
   gather_facts: yes
 
+  pre_tasks:
+    # Before the certbot role, since its standalone mode stops and starts nginx
+    - name: Ensure git and nginx are installed
+      apt:
+        name:
+          - git
+          - nginx
+        state: present
+        update_cache: yes
+      become: yes
+
   roles:
     - role: geerlingguy.certbot
       become: yes
@@ -39,15 +50,6 @@
     - name: Summarise actions
       debug:
         msg: "Deploying branch {{ git_branch }} on host {{ inventory_hostname }}"
-
-    - name: Ensure git and nginx are installed
-      apt:
-        name:
-          - git
-          - nginx
-        state: present
-        update_cache: yes
-      become: yes
     
     - name: Add user www-data to the user's group to read its files
       ansible.builtin.user:

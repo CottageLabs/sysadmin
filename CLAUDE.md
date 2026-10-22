@@ -29,7 +29,7 @@ This is a sysadmin repository for Cottage Labs containing Ansible playbooks, con
 - DigitalOcean token must be set as `DIGITALOCEAN_TOKEN` environment variable
 - SSH keys are predefined in playbooks (IDs: "30242381", "40223915")
 - Default region: `lon1` (London)
-- Default OS: `ubuntu-22-04-x64`
+- Default OS: `ubuntu-24-04-x64` (Python 3.12 for DOAJ virtualenvs)
 
 ## Common Commands
 

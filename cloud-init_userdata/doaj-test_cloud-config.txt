@@ -36,19 +36,16 @@ packages:
   - curl
   - wget
   - gnupg2
-  - python3-dev
+  - python3.12-dev
   - python3-pip
   - gcc
   - nginx
   - apache2-utils
   - certbot
   - python3-certbot-nginx
-  - rng-tools
-  - python3-virtualenv
-  - python3-distutils
+  - python3.12-venv
   - supervisor
   - libxml2-dev
-  - libxslt-dev
+  - libxslt1-dev
   - lib32z1-dev
   - redis
-  - openjdk-11-jdk

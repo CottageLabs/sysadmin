@@ -10,16 +10,32 @@
   hosts: "{{ target if target is defined and target | length > 0 else 'all:!index' }}" #doaj-editor-1 #
   gather_facts: yes
 
+  pre_tasks:
+    # Before the certbot role, since its standalone mode stops and starts nginx
+    - name: Ensure nginx is installed on web-facing hosts
+      apt:
+        name:
+          - nginx
+          - apache2-utils
+          - python3-certbot-nginx
+        state: present
+        update_cache: yes
+      become: yes
+      when: install_nginx | bool
+
   roles:
     - role: geerlingguy.certbot
       become: yes
+      when: install_nginx | bool
 
   vars:
     ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
     install_index: false
+    install_nginx: true # app servers don't need it, the load balancer talks to gunicorn directly
     server_name: "test" # name of the server/droplet
     git_branch: "develop" # or "master" or provide at runtime with -e git_branch=...
     repo_url: "https://github.com/DOAJ/doaj.git"
+    python_version: "3.12" # system python on Ubuntu 24.04
     venv_path: "/home/{{ ansible_user }}/doaj/venv"
     destination: "/home/{{ ansible_user }}/doaj"
     deploy_env: test # or production
@@ -51,6 +67,13 @@
       debug:
         var: ansible_facts
 
+    - name: Ensure we're on Ubuntu 24.04+ so python{{ python_version }} is available from apt
+      assert:
+        that:
+          - ansible_distribution == "Ubuntu"
+          - ansible_distribution_version is version('24.04', '>=')
+        fail_msg: "DOAJ needs python {{ python_version }}; this host is {{ ansible_distribution }} {{ ansible_distribution_version }}. Provision from ubuntu-24-04-x64."
+
     - name: Install opensearch
       include_tasks: tasks/install_opensearch_test_server.yml
       when: install_index | bool and deploy_env == "test"
@@ -66,8 +89,9 @@
     - name: Ensure Python3, supervisor, and Git are installed
       apt:
         name:
-          - python3
-          - python3-venv
+          - python{{ python_version }}
+          - python{{ python_version }}-venv
+          - python{{ python_version }}-dev
           - git
           - supervisor
         state: present
@@ -87,13 +111,13 @@
       debug:
         var: git_result
 
-    - name: Create a virtualenv with an up-to-date pip & awscli
+    - name: Create a python {{ python_version }} virtualenv with an up-to-date pip & awscli
       ansible.builtin.pip:
         name:
         - pip
         - awscli
         virtualenv: "{{ venv_path }}"
-        virtualenv_command: python3 -m venv
+        virtualenv_command: "python{{ python_version }} -m venv"
         state: latest
 
     - name: Ensure ~/.aws directory exists
@@ -143,21 +167,7 @@
         mode: '0644'
       when: "'app' in group_names"
 
-    - name: Check if nginx file exists in logrotate
-      stat:
-        path: /etc/logrotate.d/nginx
-      register: nginx_file
-
-    - name: Disable nginx in logrotate
-      become: true
-      command: mv /etc/logrotate.d/nginx /etc/logrotate.d/nginx.disabled
-      when: nginx_file.stat.exists
-
-    - name: Copy logrotate config files
-      become: true
-      command: cp {{ destination }}/deploy/logrotate/{{deploy_env}}/doaj-nginx /etc/logrotate.d/doaj-nginx
-
-    - name: Copy logrotate config files
+    - name: Copy analytics logrotate config file
       become: true
       command: cp {{ destination }}/deploy/logrotate/doaj-analytics /etc/logrotate.d/doaj-analytics
 
@@ -168,83 +178,100 @@
         state: link
       become: yes
 
-    - name: Add placeholder certificates for doaj.org (so nginx config is syntactically valid)
-      become: yes
-      ansible.posix.synchronize:
-        src: ../placeholder_certs/
-        dest: /etc/letsencrypt/live/
-      when: deploy_env == "production"
+    - name: Configure nginx on web-facing hosts
+      when: install_nginx | bool
+      block:
+        - name: Check if nginx file exists in logrotate
+          stat:
+            path: /etc/logrotate.d/nginx
+          register: nginx_file
 
-    - name: Copy nginx config file (test)
-      become: true
-      command: cp {{ destination }}/deploy/nginx/{{deploy_env}}/doaj /etc/nginx/sites-available/{{domain_name}}
-      when: deploy_env == "test"
+        - name: Disable nginx in logrotate
+          become: true
+          command: mv /etc/logrotate.d/nginx /etc/logrotate.d/nginx.disabled
+          when: nginx_file.stat.exists
 
-    - name: Update nginx file to the correct domain name and SSL certificate
-      become: true
-      replace:
-        path: /etc/nginx/sites-available/{{ domain_name }}
-        regexp: "<placeholder_servername>"
-        replace: "{{ domain_name }}"
-      when: deploy_env == "test"
+        - name: Copy logrotate config files
+          become: true
+          command: cp {{ destination }}/deploy/logrotate/{{deploy_env}}/doaj-nginx /etc/logrotate.d/doaj-nginx
 
-    - name: Create symlink from our code to nginx sites-available (production)
-      become: yes
-      ansible.builtin.file:
-        src: "{{ destination }}/deploy/nginx/{{deploy_env}}/doaj"
-        dest: /etc/nginx/sites-available/{{ domain_name }}
-        state: link
-      when: deploy_env == "production"
+        - name: Add placeholder certificates for doaj.org (so nginx config is syntactically valid)
+          become: yes
+          ansible.posix.synchronize:
+            src: ../placeholder_certs/
+            dest: /etc/letsencrypt/live/
+          when: deploy_env == "production"
 
-    - name: Create symlink for nginx
-      become: yes
-      ansible.builtin.file:
-        src: /etc/nginx/sites-available/{{ domain_name }}
-        dest: /etc/nginx/sites-enabled/{{ domain_name }}
-        state: link
+        - name: Copy nginx config file (test)
+          become: true
+          command: cp {{ destination }}/deploy/nginx/{{deploy_env}}/doaj /etc/nginx/sites-available/{{domain_name}}
+          when: deploy_env == "test"
 
-    - name: Always restart nginx via systemctl, create directory
-      become: yes
-      ansible.builtin.file:
-        path: /etc/systemd/system/nginx.service.d/
-        state: directory
+        - name: Update nginx file to the correct domain name and SSL certificate
+          become: true
+          replace:
+            path: /etc/nginx/sites-available/{{ domain_name }}
+            regexp: "<placeholder_servername>"
+            replace: "{{ domain_name }}"
+          when: deploy_env == "test"
 
-    - name: Write systemctl restart policy for nginx
-      become: yes
-      copy:
-        dest: /etc/systemd/system/nginx.service.d/restart.conf
-        content: |
-          [Service]
-          Restart=on-failure
-          RestartSec=5s
-      register: restartfile
+        - name: Create symlink from our code to nginx sites-available (production)
+          become: yes
+          ansible.builtin.file:
+            src: "{{ destination }}/deploy/nginx/{{deploy_env}}/doaj"
+            dest: /etc/nginx/sites-available/{{ domain_name }}
+            state: link
+          when: deploy_env == "production"
 
-    - name: Reread systemd configs if we've created the nginx file
-      become: yes
-      ansible.builtin.systemd_service:
-        daemon_reload: true
-      when: restartfile is changed
+        - name: Create symlink for nginx
+          become: yes
+          ansible.builtin.file:
+            src: /etc/nginx/sites-available/{{ domain_name }}
+            dest: /etc/nginx/sites-enabled/{{ domain_name }}
+            state: link
 
-    - name: Remove the nginx symbolic link for default
-      become: yes
-      file:
-        path: /etc/nginx/sites-enabled/default
-        state: absent
+        - name: Always restart nginx via systemctl, create directory
+          become: yes
+          ansible.builtin.file:
+            path: /etc/systemd/system/nginx.service.d/
+            state: directory
 
-    - name: Create symlink for nginx redirects
-      become: yes
-      ansible.builtin.file:
-        src: "{{ destination }}/deploy/nginx/doaj-redirects.map"
-        dest: /etc/nginx/doaj-redirects.map
-        state: link
+        - name: Write systemctl restart policy for nginx
+          become: yes
+          copy:
+            dest: /etc/systemd/system/nginx.service.d/restart.conf
+            content: |
+              [Service]
+              Restart=on-failure
+              RestartSec=5s
+          register: restartfile
 
-    - name: Add www-data user to the user group
-      ansible.builtin.user:
-        name: www-data
-        groups:
-          - "{{ ansible_user }}"
-        append: yes
-      become: yes
+        - name: Reread systemd configs if we've created the nginx file
+          become: yes
+          ansible.builtin.systemd_service:
+            daemon_reload: true
+          when: restartfile is changed
+
+        - name: Remove the nginx symbolic link for default
+          become: yes
+          file:
+            path: /etc/nginx/sites-enabled/default
+            state: absent
+
+        - name: Create symlink for nginx redirects
+          become: yes
+          ansible.builtin.file:
+            src: "{{ destination }}/deploy/nginx/doaj-redirects.map"
+            dest: /etc/nginx/doaj-redirects.map
+            state: link
+
+        - name: Add www-data user to the user group
+          ansible.builtin.user:
+            name: www-data
+            groups:
+              - "{{ ansible_user }}"
+            append: yes
+          become: yes
 
     - name: Write AWS credentials file
       copy:
@@ -313,3 +340,16 @@
       shell: "{{ destination }}/deploy/deploy.sh {{ deploy_env }}"
       args:
         chdir: "{{ destination }}"
+
+    - name: Check the nginx config
+      command: nginx -t
+      become: yes
+      changed_when: false
+      when: install_nginx | bool
+
+    - name: Reload nginx to pick up the deployed config
+      ansible.builtin.systemd_service:
+        name: nginx
+        state: reloaded
+      become: yes
+      when: install_nginx | bool
