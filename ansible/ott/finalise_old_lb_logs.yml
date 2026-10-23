@@ -1,0 +1,103 @@
+# One-time task when retiring a load balancer: push its remaining nginx logs to S3 before it's destroyed.
+#   ansible-playbook -i <old lb ip>, ott/finalise_old_lb_logs.yml -e target=<old lb ip> --private-key=~/.ssh/cl-doaj
+#
+# Run it after the reserved IP has moved to the new load balancer. The nightly logrotate only uploads compressed logs,
+# and delaycompress means the last two days (yesterday's rotated log and today's live one) aren't in S3 yet. This:
+#   - stops the old machine's nightly rotation, so it can't upload a second file for today under the normal name
+#   - moves today's logs aside with a suffix, as the new load balancer will upload its own file for today
+#   - compresses everything outstanding, syncs to s3://doaj-nginx-logs/<s3_prefix>/ and checks the uploaded sizes
+---
+- name: Finalise the nginx logs on a retired load balancer
+  hosts: "{{ target }}"
+  gather_facts: false
+  become: yes
+
+  vars:
+    ansible_user: cloo
+    s3_bucket: doaj-nginx-logs
+    s3_prefix: doaj-lb                # the prefix the old machine has been uploading to (its hostname)
+    final_suffix: "-decom"            # added to today's partial logs so they don't clash with the new machine's
+    log_dir: /var/log/nginx
+    aws: /home/cloo/doaj/venv/bin/aws --profile doaj-nginx-logs
+    force: false                      # skip the check that traffic has stopped
+
+  tasks:
+    - name: Check the machine has stopped receiving traffic (access log growth over 30 seconds)
+      shell: |
+        a=$(stat -c %s {{ log_dir }}/doaj.access.log); sleep 30; b=$(stat -c %s {{ log_dir }}/doaj.access.log)
+        echo $((b - a))
+      register: log_growth
+      changed_when: false
+      when: not force | bool
+
+    - name: Stop if it's still busy
+      assert:
+        that: log_growth.stdout | int < 50000
+        fail_msg: "doaj.access.log grew by {{ log_growth.stdout }} bytes in 30s - has the reserved IP moved? Use -e force=true to override."
+      when: not force | bool
+
+    - name: Work out today's and yesterday's dates as logrotate names them
+      shell: echo "$(date +%Y%m%d) $(date -d yesterday +%Y%m%d)"
+      register: dates
+      changed_when: false
+
+    - set_fact:
+        today: "{{ dates.stdout.split()[0] }}"
+        yesterday: "{{ dates.stdout.split()[1] }}"
+
+    - name: Disable the nightly rotation and S3 sync on this machine
+      command: mv /etc/logrotate.d/doaj-nginx /etc/logrotate.d/doaj-nginx.disabled
+      args:
+        removes: /etc/logrotate.d/doaj-nginx
+
+    # Skipped if already moved (compressed or not), so a re-run can't overwrite it with the post-reopen stragglers
+    - name: Move today's logs aside with the {{ final_suffix }} suffix
+      shell: |
+        dest={{ log_dir }}/{{ item }}-{{ today }}{{ final_suffix }}
+        if [ -e "$dest" ] || [ -e "$dest.gz" ] || [ ! -e {{ log_dir }}/{{ item }} ]; then echo skipped; exit 0; fi
+        mv {{ log_dir }}/{{ item }} "$dest" && echo moved
+      loop:
+        - doaj.access.log
+        - doaj.error.log
+      register: moved
+      changed_when: "'moved' in moved.stdout"
+
+    - name: Have nginx reopen its logs, so any stragglers go to fresh files
+      command: nginx -s reopen
+      when: moved is changed
+
+    - name: Compress everything outstanding (yesterday's rotated logs and today's partial ones)
+      shell: |
+        cd {{ log_dir }}
+        for f in doaj.access.log-{{ yesterday }} doaj.error.log-{{ yesterday }} \
+                 doaj.access.log-{{ today }}{{ final_suffix }} doaj.error.log-{{ today }}{{ final_suffix }}; do
+          [ -f "$f" ] && gzip "$f" && echo "compressed $f"
+        done
+        true
+      register: compressed
+      changed_when: compressed.stdout | length > 0
+
+    - name: Sync the compressed logs to S3
+      command: >
+        {{ aws }} s3 sync {{ log_dir }}/ s3://{{ s3_bucket }}/{{ s3_prefix }}/
+        --exclude "*" --include "doaj.*.gz"
+      register: synced
+      changed_when: "'upload:' in synced.stdout"
+
+    - name: Check every compressed log is in S3 at the same size
+      shell: |
+        cd {{ log_dir }}
+        listing=$({{ aws }} s3 ls s3://{{ s3_bucket }}/{{ s3_prefix }}/)
+        bad=0
+        for f in doaj.*.gz; do
+          local_size=$(stat -c %s "$f")
+          s3_size=$(echo "$listing" | awk -v f="$f" '$4 == f {print $3}')
+          if [ "$local_size" = "$s3_size" ]; then echo "ok       $f $local_size"; else echo "MISMATCH $f local=$local_size s3=${s3_size:-missing}"; bad=1; fi
+        done
+        exit $bad
+      register: verified
+      changed_when: false
+
+    - name: Summary
+      debug:
+        msg: "{{ compressed.stdout_lines + verified.stdout_lines }}"

@@ -55,24 +55,22 @@
     - name: Rename the droplet {{ old_name }} -> {{ new_name }} using doctl
       local_action: ansible.builtin.command doctl compute droplet-action rename {{ droplet_id }} --droplet-name {{ new_name }} --wait
 
+    # doctl rather than domain_records_info, which only returns the first page (20) of records
     - name: Get the existing A records for {{ dns_domain }}
-      digitalocean.cloud.domain_records_info:
-        token: "{{ digitalocean_token }}"
-        domain_name: "{{ dns_domain }}"
-        type: A
-      register: a_records
+      local_action: ansible.builtin.command doctl compute domain records list {{ dns_domain }} --output json
+      register: a_records_json
+      changed_when: false
 
-    # Removes the old name's record, and any leftover record for the new name pointing at a destroyed droplet
+    - name: Find stale records - the old name, and any leftover record for the new name pointing at another droplet
+      ansible.builtin.set_fact:
+        stale_records: "{{ (records | selectattr('name', '==', old_dns_prefix) | list)
+                           + (records | selectattr('name', '==', new_dns_prefix) | rejectattr('data', '==', public_ip) | list) }}"
+      vars:
+        records: "{{ a_records_json.stdout | from_json | selectattr('type', '==', 'A') | list }}"
+
     - name: Delete stale A records
-      digitalocean.cloud.domain_record:
-        token: "{{ digitalocean_token }}"
-        domain_name: "{{ dns_domain }}"
-        type: A
-        name: "{{ item.name }}"
-        data: "{{ item.data }}"
-        state: absent
-      loop: "{{ (a_records['domain_records'] | selectattr('name', '==', old_dns_prefix) | list)
-              + (a_records['domain_records'] | selectattr('name', '==', new_dns_prefix) | rejectattr('data', '==', public_ip) | list) }}"
+      local_action: ansible.builtin.command doctl compute domain records delete {{ dns_domain }} {{ item.id }} --force
+      loop: "{{ stale_records }}"
       loop_control:
         label: "{{ item.name }}.{{ dns_domain }} -> {{ item.data }}"
 
