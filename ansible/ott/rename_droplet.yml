@@ -1,0 +1,118 @@
+# Rename a droplet, e.g. once doaj-public-a has replaced (and we've destroyed) doaj-public-1:
+#   ansible-playbook ott/rename_droplet.yml -e "old_name=doaj-public-a new_name=doaj-public-1" --private-key=~/.ssh/cl-doaj
+#
+# Renames the droplet in DigitalOcean, moves its A record (public-a -> public-1), sets the hostname and reboots.
+# The private IP doesn't change, so nginx upstreams only need their comments updating, but mark the host
+# 'down' on the load balancer first if you want to avoid the brief reboot.
+---
+- name: Rename a droplet in DigitalOcean and DNS
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    digitalocean_token: "{{ lookup('ansible.builtin.env', 'DIGITALOCEAN_TOKEN') }}"
+    dns_domain: doaj.cottagelabs.com
+    old_dns_prefix: "{{ old_name | regex_replace('^doaj-', '') }}"
+    new_dns_prefix: "{{ new_name | regex_replace('^doaj-', '') }}"
+
+  tasks:
+    - name: Check we've been given two different names
+      ansible.builtin.assert:
+        that:
+          - old_name is defined and old_name | length > 0
+          - new_name is defined and new_name | length > 0
+          - old_name != new_name
+
+    - name: Look for any droplet already called {{ new_name }}
+      digitalocean.cloud.droplets_info:
+        token: "{{ digitalocean_token }}"
+        name: "{{ new_name }}"
+      register: existing_new
+
+    - name: Make sure the old {{ new_name }} has been destroyed first
+      ansible.builtin.assert:
+        that: existing_new['droplets'] | length == 0
+        fail_msg: "A droplet called {{ new_name }} still exists - destroy it before renaming {{ old_name }}"
+
+    - name: Get info on {{ old_name }}
+      digitalocean.cloud.droplets_info:
+        token: "{{ digitalocean_token }}"
+        name: "{{ old_name }}"
+      register: dropletinfo
+
+    - name: Make sure there's exactly one {{ old_name }}
+      ansible.builtin.assert:
+        that: dropletinfo['droplets'] | length == 1
+        fail_msg: "Expected one droplet called {{ old_name }}, found {{ dropletinfo['droplets'] | length }}"
+
+    - name: Parse out the droplet ID and IPs
+      ansible.builtin.set_fact:
+        droplet_id: "{{ dropletinfo['droplets'][0]['id'] }}"
+        public_ip: "{{ dropletinfo['droplets'][0]['networks']['v4'] | selectattr('type', '==', 'public') | map(attribute='ip_address') | first }}"
+        private_ip: "{{ dropletinfo['droplets'][0]['networks']['v4'] | selectattr('type', '==', 'private') | map(attribute='ip_address') | first }}"
+
+    - name: Rename the droplet {{ old_name }} -> {{ new_name }} using doctl
+      local_action: ansible.builtin.command doctl compute droplet-action rename {{ droplet_id }} --droplet-name {{ new_name }} --wait
+
+    - name: Get the existing A records for {{ dns_domain }}
+      digitalocean.cloud.domain_records_info:
+        token: "{{ digitalocean_token }}"
+        domain_name: "{{ dns_domain }}"
+        type: A
+      register: a_records
+
+    # Removes the old name's record, and any leftover record for the new name pointing at a destroyed droplet
+    - name: Delete stale A records
+      digitalocean.cloud.domain_record:
+        token: "{{ digitalocean_token }}"
+        domain_name: "{{ dns_domain }}"
+        type: A
+        name: "{{ item.name }}"
+        data: "{{ item.data }}"
+        state: absent
+      loop: "{{ (a_records['domain_records'] | selectattr('name', '==', old_dns_prefix) | list)
+              + (a_records['domain_records'] | selectattr('name', '==', new_dns_prefix) | rejectattr('data', '==', public_ip) | list) }}"
+      loop_control:
+        label: "{{ item.name }}.{{ dns_domain }} -> {{ item.data }}"
+
+    - name: Create the A record {{ new_dns_prefix }}.{{ dns_domain }} pointing to {{ public_ip }}
+      digitalocean.cloud.domain_record:
+        token: "{{ digitalocean_token }}"
+        domain_name: "{{ dns_domain }}"
+        type: A
+        name: "{{ new_dns_prefix }}"
+        data: "{{ public_ip }}"
+
+    - add_host:
+        name: "{{ public_ip }}"
+        groups: renamed
+
+- name: Set the hostname and reboot
+  hosts: renamed
+  gather_facts: false
+  become: yes
+  vars:
+    ansible_user: cloo
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+
+  tasks:
+    - name: Set the hostname to {{ new_name }}
+      ansible.builtin.hostname:
+        name: "{{ new_name }}"
+
+    # cloud-init regenerates /etc/hosts from the new hostname on boot, and services pick up the new name
+    - name: Reboot
+      ansible.builtin.reboot:
+
+    - name: Check the hostname and supervisor tasks after reboot
+      ansible.builtin.shell: hostname; supervisorctl status
+      register: post_reboot
+      changed_when: false
+      failed_when: false
+
+    - name: Summary
+      ansible.builtin.debug:
+        msg:
+          - "{{ post_reboot.stdout_lines }}"
+          - "Now update doaj-hosts.ini and the nginx upstream comments: {{ new_name }} is {{ hostvars.localhost.private_ip }}"

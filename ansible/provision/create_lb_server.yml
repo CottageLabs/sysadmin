@@ -86,7 +86,7 @@
   gather_facts: false
   vars:
     ansible_user: "cloo"
-    aws_profile_2: "another_aws_profile"
+    aws_profile_2: "doaj-nginx-logs" # used by deploy/logrotate/production/doaj-nginx to sync logs to S3
     aws_access_key_2: "access_key"
     aws_secret_key_2: "secret_key"
   tasks:
