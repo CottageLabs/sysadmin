@@ -1,0 +1,38 @@
+# Filebeat for the DOAJ load balancer: ships nginx logs (via modules.d/nginx.yml) to logstash on the Kibana machine.
+# Based on the packaged filebeat 7.17 default, with the generic inputs disabled and output to logstash.
+filebeat.inputs:
+- type: log
+  enabled: false
+  paths:
+    - /var/log/*.log
+- type: filestream
+  enabled: false
+  paths:
+    - /var/log/*.log
+
+filebeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
+
+setup.template.settings:
+  index.number_of_shards: 3
+
+setup.kibana:
+
+output.logstash:
+  hosts: ["{{ filebeat_logstash_host }}"]
+
+processors:
+  - add_host_metadata:
+      when.not.contains.tags: forwarded
+  - add_cloud_metadata: ~
+  - add_docker_metadata: ~
+  - add_kubernetes_metadata: ~
+
+# Newer glibc uses the rseq syscall, which filebeat 7.x's default seccomp policy blocks
+seccomp:
+  default_action: allow
+  syscalls:
+  - action: allow
+    names:
+    - rseq

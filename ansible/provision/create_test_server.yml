@@ -44,6 +44,10 @@
       digitalocean.cloud.droplets_info:
         name: '{{droplet_name}}'
       register: dropletinfo
+      # A new droplet can briefly be active without its IPs assigned
+      until: dropletinfo['droplets'] | length > 0 and (dropletinfo['droplets'][0]['networks']['v4'] | selectattr('type', '==', 'public') | list | length > 0)
+      retries: 30
+      delay: 10
 
     - name: Parse out the assigned IP
       ansible.builtin.set_fact:

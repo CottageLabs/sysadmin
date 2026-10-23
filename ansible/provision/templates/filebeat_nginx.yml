@@ -1,0 +1,25 @@
+# Module: nginx
+# Docs: https://www.elastic.co/guide/en/beats/filebeat/7.17/filebeat-module-nginx.html
+
+- module: nginx
+  # Access logs
+  access:
+    enabled: true
+    var.paths:
+      - /var/log/nginx/doaj.access.log
+    var.input.close_renamed: true
+    var.input.close_removed: true
+    var.input.close_inactive: 1h
+
+  # Error logs
+  error:
+    enabled: true
+    var.paths:
+      - /var/log/nginx/doaj.error*.log
+    var.input.close_renamed: true
+    var.input.close_removed: true
+    var.input.close_inactive: 1h
+
+  # Ingress-nginx controller logs, only for Kubernetes
+  ingress_controller:
+    enabled: false

@@ -1,4 +1,5 @@
-# ansible-playbook create_app_server.yml -e "droplet_name=doaj-public-a droplet_size=s-4vcpu-8gb aws_profile=doaj-app aws_access_key=<key> aws_secret_key=<key>" --private-key=~/.ssh/id_rsa
+# ansible-playbook create_app_server.yml -e droplet_name=doaj-public-a -e @aws_creds_from_file.yml -e aws_creds_file=/path/to/.aws/credentials --private-key=~/.ssh/cl-doaj
+# (add -e droplet_size=s-2vcpu-4gb for an editor server)
 ---
 - name: Bring up a new DOAJ application server
   hosts: localhost
@@ -40,6 +41,10 @@
       digitalocean.cloud.droplets_info:
         name: '{{droplet_name}}'
       register: dropletinfo
+      # A new droplet can briefly be active without its IPs assigned
+      until: dropletinfo['droplets'] | length > 0 and (dropletinfo['droplets'][0]['networks']['v4'] | selectattr('type', '==', 'public') | list | length > 0)
+      retries: 30
+      delay: 10
 
     - name: Parse out the assigned IP
       ansible.builtin.set_fact:

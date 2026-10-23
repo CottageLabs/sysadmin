@@ -1,3 +1,11 @@
+# ansible-playbook create_lb_server.yml -e droplet_name=doaj-lb-a -e @aws_creds_from_file.yml \
+#   -e aws_creds_file=/path/to/doaj-lb/.aws/credentials -e aws_creds_file_2=/path/to/.aws/credentials --private-key=~/.ssh/cl-doaj
+#
+# aws_creds_file's [doaj-app] section should hold the doaj-loadbalancer IAM user's keys (not doaj-apps): on the load
+# balancer that profile is different credentials performing the same role, and can also read the doaj/loadbalancer
+# secret (htpasswd and Cloudflare origin certificates). aws_creds_file_2 needs [doaj-nginx-logs] for the logrotate S3 sync.
+# Once it's working, move the reserved IP over:
+#   doctl compute reserved-ip-action assign 46.101.64.14 <new droplet id>
 - name: Bring up a new DOAJ load balancer server
   hosts: localhost
   connection: local
@@ -7,7 +15,10 @@
     digitalocean_token: "{{ lookup('ansible.builtin.env', 'DIGITALOCEAN_TOKEN') }}"
     server_config: "{{ lookup('ansible.builtin.file', '../../cloud-init_userdata/doaj-app_cloud-config.txt') }}"
     droplet_name: doaj-lb
-    dns_prefix: loadbalancer
+    #Slug          Description        Memory     VCPUs    Disk    Price Monthly
+    #c-2           CPU-Optimized      4096       2        25      42.00
+    droplet_size: c-2
+    dns_prefix: "{{ droplet_name | regex_replace('^doaj-', '') }}"
     dns_domain: doaj.cottagelabs.com
 
   tasks:
@@ -18,9 +29,7 @@
         token: "{{ digitalocean_token }}"
         name: '{{droplet_name}}'
         region: lon1
-        #Slug          Description        Memory     VCPUs    Disk    Price Monthly
-        #c-2           CPU-Optimized      4096       2        25      42.00
-        size: c-2
+        size: '{{ droplet_size }}'
         tags:
           - doaj
           - firewall-doaj-app
@@ -38,10 +47,15 @@
       digitalocean.cloud.droplets_info:
         name: '{{droplet_name}}'
       register: dropletinfo
+      # A new droplet can briefly be active without its IPs assigned
+      until: dropletinfo['droplets'] | length > 0 and (dropletinfo['droplets'][0]['networks']['v4'] | selectattr('type', '==', 'public') | list | length > 0)
+      retries: 30
+      delay: 10
 
     - name: Parse out the assigned IP
       ansible.builtin.set_fact:
         public_ip: "{{ dropletinfo['droplets'][0]['networks']['v4'] | selectattr('type', '==', 'public') | map(attribute='ip_address') | first }}"
+        private_ip: "{{ dropletinfo['droplets'][0]['networks']['v4'] | selectattr('type', '==', 'private') | map(attribute='ip_address') | first }}"
         droplet_id: "{{ dropletinfo['droplets'][0]['id'] }}"
 
     - name: Create domain A record
@@ -57,10 +71,11 @@
 
     - name: Output a summary including login command
       ansible.builtin.debug:
-        msg: "App server created: cloo@{{public_ip}}"
+        msg: "Load balancer created: cloo@{{public_ip}} ({{ dns_prefix }}.{{ dns_domain }}), droplet ID {{ droplet_id }}"
 
     - set_fact:
         remote_host_name: "{{ droplet_name }}"
+        lb_domain: "{{ dns_prefix }}.{{ dns_domain }}"
 
     - add_host:
         name: "{{ public_ip }}"
@@ -70,18 +85,20 @@
       pause:
         minutes: 7
 
-- name: Run initial setup - only copy the repo to the machine and run nginx
+- name: Run initial setup - copy the repo to the machine and run nginx
   import_playbook: server_initial_setup.yml
   vars:
     target: "{{ hostvars.localhost.public_ip }}"
     server_name: "{{ hostvars.localhost.remote_host_name }}"
-    certbot_domain: loadbalancer.doaj.cottagelabs.com
+    certbot_domain: "{{ hostvars.localhost.lb_domain }}"
+    skip_latest_dns: true
+    install_lb_secrets: true
     ansible_user: "cloo"
-    install_indexdex: false
+    install_index: false
     git_branch: "master"
     deploy_env: production
 
-- name: Perform load balancer tasks - nginx logs credentials, cleanup
+- name: Perform load balancer tasks - nginx logs credentials, filebeat, cleanup
   hosts: load_balancer
   gather_facts: false
   vars:
@@ -89,6 +106,8 @@
     aws_profile_2: "doaj-nginx-logs" # used by deploy/logrotate/production/doaj-nginx to sync logs to S3
     aws_access_key_2: "access_key"
     aws_secret_key_2: "secret_key"
+    filebeat_version: "7.17.29"
+    filebeat_logstash_host: "10.131.191.162:5045" # logstash on the Kibana machine
   tasks:
     - name: Delete the newly-created instance cfg file, only used for test servers
       ansible.builtin.file:
@@ -114,3 +133,80 @@
           output = text
           region = eu-west-2
         prepend_newline: true
+
+    - name: Add the Elastic signing key
+      become: yes
+      ansible.builtin.get_url:
+        url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+        dest: /usr/share/keyrings/elastic.asc
+        mode: '0644'
+
+    - name: Add the Elastic 7.x repository
+      become: yes
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/elastic.asc] https://artifacts.elastic.co/packages/7.x/apt stable main"
+        filename: elastic-7.x
+        state: present
+
+    - name: Install filebeat {{ filebeat_version }}, matching the version shipping to our Kibana
+      become: yes
+      ansible.builtin.apt:
+        name: "filebeat={{ filebeat_version }}"
+        state: present
+        update_cache: yes
+
+    - name: Write the filebeat config
+      become: yes
+      ansible.builtin.template:
+        src: templates/filebeat.yml
+        dest: /etc/filebeat/filebeat.yml
+        owner: root
+        group: root
+        mode: '0600'
+
+    - name: Write the filebeat nginx module config
+      become: yes
+      ansible.builtin.template:
+        src: templates/filebeat_nginx.yml
+        dest: /etc/filebeat/modules.d/nginx.yml
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Start filebeat and enable it on boot
+      become: yes
+      ansible.builtin.systemd_service:
+        name: filebeat
+        enabled: yes
+        state: restarted
+
+    - name: Restart filebeat daily, as on the previous load balancer
+      become: yes
+      ansible.builtin.cron:
+        name: restart filebeat
+        minute: "0"
+        hour: "5"
+        job: "systemctl restart filebeat && echo `date` > /home/{{ ansible_user }}/fb_restarted.txt"
+
+    - name: Check the nginx config
+      become: yes
+      command: nginx -t
+      changed_when: false
+
+    - name: Reload nginx
+      become: yes
+      ansible.builtin.systemd_service:
+        name: nginx
+        state: reloaded
+
+- name: Output the next steps
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Next steps
+      ansible.builtin.debug:
+        msg:
+          - "Load balancer {{ remote_host_name }} is at {{ public_ip }} / {{ private_ip }}, droplet ID {{ droplet_id }}"
+          - "Test with: curl --resolve doaj.org:443:{{ public_ip }} -k https://doaj.org/"
+          - "Switch over with: doctl compute reserved-ip-action assign 46.101.64.14 {{ droplet_id }}"

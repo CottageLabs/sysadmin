@@ -195,13 +195,6 @@
           become: true
           command: cp {{ destination }}/deploy/logrotate/{{deploy_env}}/doaj-nginx /etc/logrotate.d/doaj-nginx
 
-        - name: Add placeholder certificates for doaj.org (so nginx config is syntactically valid)
-          become: yes
-          ansible.posix.synchronize:
-            src: ../placeholder_certs/
-            dest: /etc/letsencrypt/live/
-          when: deploy_env == "production"
-
         - name: Copy nginx config file (test)
           become: true
           command: cp {{ destination }}/deploy/nginx/{{deploy_env}}/doaj /etc/nginx/sites-available/{{domain_name}}
@@ -221,6 +214,15 @@
             src: "{{ destination }}/deploy/nginx/{{deploy_env}}/doaj"
             dest: /etc/nginx/sites-available/{{ domain_name }}
             state: link
+          when: deploy_env == "production"
+
+        - name: Create symlink from our code to the main nginx.conf (production)
+          become: yes
+          ansible.builtin.file:
+            src: "{{ destination }}/deploy/nginx/production/nginx.conf"
+            dest: /etc/nginx/nginx.conf
+            state: link
+            force: yes
           when: deploy_env == "production"
 
         - name: Create symlink for nginx
@@ -292,6 +294,11 @@
           region = {{ aws_region }}
         owner: "{{ ansible_user }}"
         mode: '0600'
+
+    # Needs the AWS credentials above, and must be done before nginx is checked and reloaded at the end
+    - name: Install the load balancer's htpasswd and certificates
+      include_tasks: tasks/lb_secrets.yml
+      when: install_lb_secrets | default(false) | bool
 
     - name: Create symlinks for supervisor
       ansible.builtin.file:

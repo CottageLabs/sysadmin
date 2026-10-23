@@ -1,0 +1,12 @@
+# Read AWS keys from an existing credentials file rather than passing them on the command line, e.g.
+#   ansible-playbook create_app_server.yml -e @aws_creds_from_file.yml -e aws_creds_file=/home/me/doaj-aws/credentials -e droplet_name=doaj-public-a
+# Don't run with -v when using this; verbose output can include the values.
+aws_profile: doaj-app
+aws_access_key: "{{ lookup('ansible.builtin.ini', 'aws_access_key_id', section=aws_profile, file=aws_creds_file) }}"
+aws_secret_key: "{{ lookup('ansible.builtin.ini', 'aws_secret_access_key', section=aws_profile, file=aws_creds_file) }}"
+
+# Second profile, only used by create_lb_server.yml for the nginx log sync to S3.
+# Pass -e aws_creds_file_2=... if it's in a different file from the first.
+aws_profile_2: doaj-nginx-logs
+aws_access_key_2: "{{ lookup('ansible.builtin.ini', 'aws_access_key_id', section=aws_profile_2, file=aws_creds_file_2 | default(aws_creds_file)) }}"
+aws_secret_key_2: "{{ lookup('ansible.builtin.ini', 'aws_secret_access_key', section=aws_profile_2, file=aws_creds_file_2 | default(aws_creds_file)) }}"
