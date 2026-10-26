@@ -1,5 +1,5 @@
 # ansible-playbook create_app_server.yml -e droplet_name=doaj-public-a -e @aws_creds_from_file.yml -e aws_creds_file=/path/to/.aws/credentials --private-key=~/.ssh/cl-doaj
-# (add -e droplet_size=s-2vcpu-4gb -e readonly_index=false for an editor server)
+# (add -e readonly_index=false for an editor server)
 ---
 - name: Bring up a new DOAJ application server
   hosts: localhost
@@ -10,7 +10,7 @@
     digitalocean_token: "{{ lookup('ansible.builtin.env', 'DIGITALOCEAN_TOKEN') }}"
     server_config: "{{ lookup('ansible.builtin.file', '../../cloud-init_userdata/doaj-app_cloud-config.txt') }}"
     droplet_name: doaj-public-a
-    droplet_size: s-4vcpu-8gb   # 4 CPUs general purpose; c-4 is 4 CPUs optimised, s-2vcpu-4gb for editor
+    droplet_size: s-4vcpu-8gb
     # We initially want this server accessible via e.g. public-a.doaj.cottagelabs.com
     dns_prefix: "{{ droplet_name | regex_replace('^doaj-', '') }}"
     dns_domain: doaj.cottagelabs.com

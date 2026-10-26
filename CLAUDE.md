@@ -85,7 +85,7 @@ ansible-playbook -i IP_ADDRESS, ansible/provision/server_initial_setup.yml \
 ### Domain Configuration
 - Production: `doaj.org`
 - Test servers: `{server_name}.doaj.cottagelabs.com`
-- Load balancer: `loadbalancer.doaj.cottagelabs.com`
+- Load balancer: `lb.doaj.cottagelabs.com` (production traffic arrives via the DigitalOcean reserved IP 46.101.64.14)
 
 ## Ansible Configuration
 
