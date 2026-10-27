@@ -163,7 +163,7 @@ docker compose -f ~/passbolt/docker-compose-ce.yaml up -d db
 **2. Restore the database**
 ```bash
 docker cp ~/passbolt/backups/passbolt-YYYYMMDD.sql passbolt-db-1:/tmp/
-docker exec passbolt-db-1 bash -c 'mysql -u passbolt -peemoo5Ah-Bae3Ohyu passbolt < /tmp/passbolt-YYYYMMDD.sql'
+docker exec passbolt-db-1 bash -c 'mysql -u passbolt -p<PASSWORD> passbolt < /tmp/passbolt-YYYYMMDD.sql'
 ```
 
 **3. Restore the GPG keys**
