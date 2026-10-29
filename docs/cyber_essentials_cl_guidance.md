@@ -189,7 +189,6 @@ Only applications on this list (plus software supplied as part of a supported op
 - [ ] Windows/macOS: built-in anti-malware enabled and updating
 - [ ] Only approved applications from approved sources installed
 - [ ] Unnecessary applications removed
-- [ ] Emergency contact information saved
 - [ ] Device security features (biometrics) enabled where available
 
 ## Support and Questions
