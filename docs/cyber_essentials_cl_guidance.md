@@ -198,4 +198,4 @@ For questions about this guidance or assistance with implementation, contact the
 
 ---
 
-*This document supports Cottage Labs' UK Cyber Essentials certification requirements. Last updated: 2026-10-14*
+*This document supports Cottage Labs' UK Cyber Essentials certification requirements. Last updated: 2026-10-29*
