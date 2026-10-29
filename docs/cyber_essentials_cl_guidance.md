@@ -46,10 +46,16 @@ Home routers not supplied by Cottage Labs are outside the scope of our Cyber Ess
 ## User Account Management
 
 ### Administrator Privileges
-- **Elevation Only When Needed**: Carry out administrative tasks (installing software, changing system settings) only through the operating system's elevation prompt - UAC on Windows, administrator authentication on macOS, `sudo` on Linux
-- **Keep Prompts Enabled**: Do not disable UAC, and do not configure passwordless (`NOPASSWD`) sudo for your user account
-- **Everyday Use**: Do not run browsers, email or other everyday applications with administrator privileges
-- **Separate Admin Account (Optional)**: A separate administrator account for system changes is recommended but not required on BYOD devices
+- **Separate Admin Account (Required)**: Every computer used for Cottage Labs work must have a separate local administrator account, and the account you use day to day must be a standard (non-administrator) user - even if you are the only person who uses the computer
+- **Everyday Use**: Do web browsing, email and office work only from your standard account; never use the administrator account for these
+- **Elevation Only When Needed**: Carry out administrative tasks (installing software, changing system settings) by entering the administrator account's credentials at the operating system's elevation prompt - UAC on Windows, administrator authentication on macOS, `su`/`sudo` as the admin account on Linux
+- **Keep Prompts Enabled**: Do not disable UAC, and do not configure passwordless (`NOPASSWD`) sudo
+- **Admin Password**: The administrator account needs its own strong, unique password (at least 12 characters), stored in your password manager
+
+#### Setting Up Account Separation
+- **Windows**: Settings > Accounts > Other users > Add account - create a local administrator account (e.g. `admin`) and set its account type to Administrator. Sign in to it once, then change your everyday account's type to Standard User
+- **macOS**: System Settings > Users & Groups > Add User - create an Administrator account. Then select your everyday account and turn off "Allow this user to administer this computer"
+- **Ubuntu**: create an admin user with `sudo adduser admin && sudo usermod -aG sudo admin`, confirm `su - admin -c 'sudo -v'` works, then remove your everyday user from the `sudo` (and `docker`) groups with `sudo deluser $USER sudo`. For admin tasks, run `su - admin` first. Use rootless Docker for everyday development
 
 ### Multi-Factor Authentication (Required)
 - **All Work Accounts**: MFA must be enabled on every cloud service account used for Cottage Labs work
@@ -76,7 +82,7 @@ Home routers not supplied by Cottage Labs are outside the scope of our Cyber Ess
 
 ### Automatic Locking
 - **Screen Lock**: Configure automatic screen lock after 5-10 minutes of inactivity
-- **Lock Requirements**: 6-digit minimum PIN or strong password
+- **Lock Requirements**: a PIN of at least 6 digits (used only to unlock the device, e.g. Windows Hello or phone PIN), or a password of at least 12 characters
 - **Biometric Authentication**: Use fingerprint, face recognition, or similar where available
 - **Sleep/Hibernate**: Configure system to require authentication after sleep/hibernate
 
@@ -175,6 +181,7 @@ Only applications on this list (plus software supplied as part of a supported op
 - [ ] Router/network equipment default passwords changed (recommended)
 - [ ] Router firmware updated to latest version (recommended)
 - [ ] Software firewall activated and configured (Linux: `sudo ufw status` shows `active`)
+- [ ] Separate administrator account created; everyday account is a standard user
 - [ ] Elevation prompts (UAC / sudo password) left enabled
 - [ ] MFA enabled on all work accounts
 - [ ] Strong passwords/PINs implemented
