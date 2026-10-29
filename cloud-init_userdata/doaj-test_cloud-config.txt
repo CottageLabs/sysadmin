@@ -43,9 +43,8 @@ packages:
   - apache2-utils
   - certbot
   - python3-certbot-nginx
-  - rng-tools
+  - rng-tools5
   - python3-virtualenv
-  - python3-distutils
   - supervisor
   - libxml2-dev
   - libxslt-dev
