@@ -16,7 +16,10 @@
         force: no
       register: code_updated
 
+# One host at a time: deploy.sh restarts the app, and the load balancer retries requests on the other servers
+# while each one restarts, so a rolling deploy doesn't drop traffic (restarting them all at once did)
 - hosts: app:loadbalancer
+  serial: 1
   tasks:
     - name: Run the service deploy script if there were code changes
       shell: /home/cloo/doaj/deploy/deploy.sh production

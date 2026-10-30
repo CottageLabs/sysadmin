@@ -76,11 +76,12 @@ ansible-playbook -i IP_ADDRESS, ansible/provision/server_initial_setup.yml \
 - SSH key authentication only (password auth disabled)
 
 ### Standard Packages
-- Development: git, python3-dev, python3-pip, gcc
+- Development: git, python3.12-dev, python3.12-venv, python3-pip, gcc
 - Monitoring: htop, tree, ncdu
-- Web: nginx, certbot, python3-certbot-nginx
+- Web: nginx, certbot, python3-certbot-nginx - load balancer and test servers only (`install_nginx`); app servers
+  serve gunicorn on :5050 directly to the load balancer
 - Process management: supervisor
-- Dependencies: libxml2-dev, libxslt-dev, lib32z1-dev
+- Dependencies: libxml2-dev, libxslt1-dev, lib32z1-dev
 
 ### Domain Configuration
 - Production: `doaj.org`
@@ -100,11 +101,12 @@ ansible-playbook -i IP_ADDRESS, ansible/provision/server_initial_setup.yml \
 
 ### Supervisor Tasks
 - App tasks: `doaj`
-- Background tasks: `huey-long-running`, `huey-main`, `huey-events`, `huey-scheduled-long`, `huey-scheduled-short`
+- Background tasks: `huey-events`, `huey-scheduled-long`, `huey-scheduled-short` (background server, which also runs redis)
 
 ## Security Notes
 
 - SSH keys are hardcoded in cloud-init configuration
-- SSL certificates managed via Let's Encrypt/Certbot
+- Load balancer TLS uses Cloudflare Origin CA certificates (doaj.org, doajes.cottagelabs.com) in /etc/nginx/ssl, installed
+  from the `doaj/loadbalancer` AWS Secrets Manager secret (`provision/tasks/lb_secrets.yml`); test servers use Let's Encrypt/Certbot
 - Firewall tags: `doaj`, `firewall-doaj-app`
 - All servers assigned to DOAJ DigitalOcean project (ID: f7668431-327e-47d8-9d7e-73e713fe1d4d)

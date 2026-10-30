@@ -5,7 +5,7 @@
 ---
 
 - name: Setup Redis for common access from app servers
-  hosts: bg
+  hosts: background
   become: true
   gather_facts: yes
 
@@ -29,11 +29,23 @@
         state: present
         backup: yes
         backrefs: yes
-      register: config_updated
+      register: bind_updated
+
+    # Redis 7 (Ubuntu 24.04) applies protected mode even with an explicit bind, so with no password it refuses every
+    # non-local connection and the app servers and huey can't reach it. Access is limited by the bind above and the
+    # doaj-redis DigitalOcean firewall (port 6379 from tag firewall-doaj-app only).
+    - name: Turn off protected mode so app servers can connect over eth1
+      lineinfile:
+        dest: /etc/redis/redis.conf
+        regexp: '^protected-mode\s+'
+        line: "protected-mode no"
+        state: present
+        backup: yes
+      register: protected_mode_updated
 
     - name: Restart redis with the new configuration if necessary
       ansible.builtin.service:
         name: redis-server
         state: restarted
-      when: config_updated
+      when: bind_updated is changed or protected_mode_updated is changed
 

@@ -1,0 +1,48 @@
+# Put DOAJ into (or take it out of) read-only mode on every app server, e.g. for maintenance on background-1:
+#   ansible-playbook -i doaj-hosts.ini read_only_mode.yml -e read_only=true
+#   ansible-playbook -i doaj-hosts.ini read_only_mode.yml -e read_only=false
+#
+# Sets READ_ONLY_MODE (UI and API refuse writes) and SCRIPTS_READ_ONLY_MODE (background tasks and scripts can't write,
+# and the DAO skips all index writes) in instance.cfg, which overrides production.cfg, so no deploy is needed.
+# All servers switch at once: doaj is reloaded gracefully (HUP) and the huey workers are restarted.
+---
+- hosts: app
+  gather_facts: false
+
+  vars:
+    read_only: true
+    huey_tasks:
+      - huey-events
+      - huey-scheduled-long
+      - huey-scheduled-short
+
+  tasks:
+    - name: Check we've been told which way to switch
+      assert:
+        that: read_only is defined
+      run_once: true
+
+    - name: Set read-only mode in instance.cfg
+      blockinfile:
+        path: /home/cloo/doaj/instance.cfg
+        create: yes
+        owner: cloo
+        group: cloo
+        mode: '0644'
+        marker: "# {mark} READ-ONLY MODE - managed by read_only_mode.yml"
+        block: |
+          READ_ONLY_MODE = True
+          SCRIPTS_READ_ONLY_MODE = True
+        state: "{{ 'present' if read_only | bool else 'absent' }}"
+      register: cfg
+
+    # Graceful: new workers load the new config, old ones finish their requests (gunicorn has no preload_app)
+    - name: Gracefully reload the doaj app
+      become: yes
+      command: supervisorctl signal HUP doaj
+      when: cfg is changed
+
+    - name: Restart the huey workers so they pick up the setting
+      become: yes
+      command: supervisorctl restart {{ huey_tasks | join(' ') }}
+      when: cfg is changed and 'background' in group_names
