@@ -22,7 +22,7 @@ This is a sysadmin repository for Cottage Labs containing Ansible playbooks, con
 - **App Servers**: DOAJ application servers (`create_app_server.yml`)
 - **Load Balancer**: Load balancing server (`create_lb_server.yml`)
 - **Test Servers**: Development/testing environments (`create_test_server.yml`)
-- **Static Servers**: Static content servers
+- **Static Servers**: `static`, a small test server on `static_pages` (`create_static_server.yml`)
 - **Kibana Systems**: Log analysis and monitoring
 
 ### Environment Requirements
@@ -49,9 +49,6 @@ ansible-playbook ansible/provision/create_test_server.yml
 ```bash
 # Update production site
 ansible-playbook ansible/update-site.yml
-
-# Update test site
-ansible-playbook ansible/update-test-site.yml
 
 # Restart services
 ansible-playbook ansible/restart.yml

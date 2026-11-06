@@ -27,3 +27,9 @@ Destroy a test server instance:
 It can also be handy to use the yaml output callback for readability. Example command:
 
     ANSIBLE_STDOUT_CALLBACK=yaml ansible-playbook -i localhost, -c local create_app_server.yml -v
+
+### The static pages server (static.doaj.cottagelabs.com)
+
+A small test server on the `static_pages` branch, created by `create_static_server.yml` (see its header for the
+command). After that, deploys run from the doaj repo's `Deploy static pages server` GitHub Action on push to
+`static_pages`.

@@ -1,5 +1,8 @@
 # Read AWS keys from an existing credentials file rather than passing them on the command line, e.g.
 #   ansible-playbook create_app_server.yml -e @aws_creds_from_file.yml -e aws_creds_file=/home/me/doaj-aws/credentials -e droplet_name=doaj-public-a
+# For test servers override the profile; later -e values win, and the file only needs a [doaj-test] section:
+#   ansible-playbook create_static_server.yml -e @aws_creds_from_file.yml --e="aws_profile=doaj-test aws_creds_file=/home/me/.aws/credentials"
+# Only aws_creds_file is read (any credentials-format file); no local .aws/config is needed.
 # Don't run with -v when using this; verbose output can include the values.
 aws_profile: doaj-app
 aws_access_key: "{{ lookup('ansible.builtin.ini', 'aws_access_key_id', section=aws_profile, file=aws_creds_file) }}"

@@ -1,7 +1,6 @@
 ## command using IP address -
 # ansible-playbook -i 192.168.1.100, server_initial_setup.yml --e "server_name=test1 install_index=true git_branch=feature/form_experiment
-#      ansible_user=cloo aws_profile=doaj-test-upload aws_access_key=key aws_secret_key=key
-#      aws_secret_id=doaj/test-credentials" --private-key=~/.ssh/id_rsa -vv
+#      ansible_user=cloo aws_profile=doaj-test-upload aws_access_key=key aws_secret_key=key" --private-key=~/.ssh/id_rsa -vv
 ## command using a specific host or group from your inventory.
 # ansible-playbook -i doaj-hosts.ini server_initial_setup.yml --limit "hostname_or_ip" -e "git_branch=feature/new-feature"
 
@@ -31,6 +30,7 @@
   vars:
     ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
     install_index: false
+    opensearch_heap: "4g" # test servers only; keep at or below half the droplet RAM
     install_nginx: true # app servers don't need it, the load balancer talks to gunicorn directly
     server_name: "test" # name of the server/droplet
     git_branch: "develop" # or "master" or provide at runtime with -e git_branch=...
@@ -43,7 +43,6 @@
     aws_access_key: "your_access_key"
     aws_secret_key: "your_secret_key"
     aws_region: "eu-west-2"
-    aws_secret_id: "test-credentials"
     certbot_domain: "{{ server_name + '.doaj.cottagelabs.com' }}"
     domain_name: "{{ certbot_domain if deploy_env == 'test' else 'doaj.org' }}"
     app_supervisor_tasks:

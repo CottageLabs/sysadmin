@@ -5,10 +5,11 @@
 
   vars:
     ansible_user: "cloo"
+    import_settings: test_server.json # see data_import_settings/ in the doaj repo
 
   tasks:
     - name: Run Python script in a screen session
       shell: |
-        screen -dmS init_import_data bash -c 'cd /home/{{ansible_user}}/doaj && DOAJENV="test" /home/{{ansible_user}}/doaj/venv/bin/python -u portality/scripts/anon_import.py data_import_settings/test_server.json > ~/init_anon_import_output.log 2>&1'
+        screen -dmS init_import_data bash -c 'cd /home/{{ansible_user}}/doaj && DOAJENV="test" /home/{{ansible_user}}/doaj/venv/bin/python -u portality/scripts/anon_import.py data_import_settings/{{ import_settings }} > ~/init_anon_import_output.log 2>&1'
       environment:
         TERM: xterm

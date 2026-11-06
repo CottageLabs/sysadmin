@@ -1,8 +1,14 @@
 #
-# ansible-playbook create_static_server.yml --e "droplet_name=<name> install_indexdex=false git_branch=<git branch> aws_profile=doaj-test aws_access_key=<key> aws_secret_key=<key> aws_scret_id=<id>s" --private-key=~/.ssh/id_rsa -vv
+# The static pages preview server, static.doaj.cottagelabs.com: a small test server on the static_pages branch with a
+# partial anonymised import. Deploys after this are done by the doaj repo's "Deploy static pages server" GitHub Action.
+#
+# ansible-playbook destroy_test_server.yml --e "droplet_name=static"
+# ansible-playbook create_static_server.yml -e @aws_creds_from_file.yml --e="aws_profile=doaj-test aws_creds_file=/path/to/.aws/credentials" --private-key=~/.ssh/cl-doaj
+#
+# deploy.sh fetches app.cfg using the doaj-test profile, so aws_profile must be doaj-test (it overrides the file's doaj-app).
 #
 ---
-- name: Bring up a new DOAJ test server
+- name: Bring up the DOAJ static pages server
   hosts: localhost
   connection: local
   gather_facts: true
@@ -14,66 +20,29 @@
     digitalocean_token: "{{ lookup('ansible.builtin.env', 'DIGITALOCEAN_TOKEN') }}"
     server_config: "{{ lookup('ansible.builtin.file', '../../cloud-init_userdata/doaj-test_cloud-config.txt') }}"
     droplet_name: static
+    droplet_size: s-2vcpu-4gb
+    droplet_tags:
+      - doaj-test
+      - firewall-web-ssh
     dns_prefix: '{{ droplet_name }}'
     dns_domain: doaj.cottagelabs.com
-  
+
   tasks:
 
-    - name: Create Droplet with root access Steve and Rama, using test server userdata
-      digitalocean.cloud.droplet:
-        state: present
-        token: "{{ digitalocean_token }}"
-        name: '{{droplet_name}}'
-        region: lon1
-        size: s-2vcpu-4gb
-        tags:
-          - doaj-test
-          - firewall-web-ssh
-        image: ubuntu-24-04-x64
-        # Run task list_ssh_keys.yml to get the key IDs
-        ssh_keys: ["30242381", "40223915"]
-        ipv6: true
-        unique_name: true
-        monitoring: true
-        backups: false
-        with_droplet_agent: true
-        user_data: "{{ server_config }}"
-
-    - name: Get info on our new droplet to get the IP
-      digitalocean.cloud.droplets_info:
-        name: '{{droplet_name}}'
-      register: dropletinfo
-
-    - name: Parse out the assigned IP
-      ansible.builtin.set_fact:
-        public_ip: "{{ dropletinfo['droplets'][0]['networks']['v4'] | selectattr('type', '==', 'public') | map(attribute='ip_address') | first }}"
-        droplet_id: "{{ dropletinfo['droplets'][0]['id'] }}"
-
-    - name: Create domain A record
-      digitalocean.cloud.domain_record:
-        token: "{{ digitalocean_token }}"
-        domain_name: '{{ dns_domain }}'
-        type: A
-        name: '{{ dns_prefix }}'
-        data: "{{ public_ip }}"
-
-    - name: Assign the new droplet to the DOAJ project using doctl
-      local_action: ansible.builtin.command doctl projects resources assign f7668431-327e-47d8-9d7e-73e713fe1d4d --resource=do:droplet:{{ droplet_id }}
+    - name: Create the droplet and its DNS record
+      include_tasks: tasks/create_droplet.yml
 
     - set_fact:
         remote_host_name: "{{ droplet_name }}"
+        login_command: "ssh cloo@{{ dns_prefix }}.{{ dns_domain }}"
 
     - add_host:
         name: "{{ public_ip }}"
         groups: test_servers
 
-    - name: Output a summary including login command
-      ansible.builtin.debug:
-        msg: "Test server created: cloo@{{dns_prefix}}.{{dns_domain}} at IP {{public_ip}}"
-
     - name: Give 7 minutes for the server to be up
       pause:
-        seconds: 420
+        minutes: 7
 
 - name: Run initial setup
   import_playbook: server_initial_setup.yml
@@ -81,11 +50,29 @@
     target: "{{ hostvars.localhost.public_ip }}"
     server_name: "{{ hostvars.localhost.remote_host_name }}"
     ansible_user: "cloo"
-    install_indexdex: true
+    install_index: true
+    opensearch_heap: "2g"   # half the 4GB droplet; the default 4g is the whole droplet
+    skip_latest_dns: true   # certificate for static only, never latest
+    background_supervisor_tasks: []  # no huey: scheduled jobs (e.g. journal_csv) stall OpenSearch on this small droplet
     git_branch: "static_pages"
+
+- name: Give a minute for the app to stabilise
+  hosts: localhost
+  tasks:
+    - name: Waiting...
+      pause:
+        minutes: 1
 
 - name: Import Test data
   import_playbook: import_test_data.yml
   vars:
     target: "{{ hostvars.localhost.public_ip }}"
     ansible_user: "cloo"
+    import_settings: dev_extras.json  # ~100k articles, ~1.5GB of indices; test_server.json is too big for this droplet
+
+- name: Output a login command for immediate use
+  hosts: localhost
+  tasks:
+    - name: Login command for {{ hostvars.localhost.remote_host_name }}
+      ansible.builtin.debug:
+        msg: "Static pages server created: {{ hostvars.localhost.login_command }}"
