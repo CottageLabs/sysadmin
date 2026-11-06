@@ -35,9 +35,34 @@ ansible-playbook ansible/provision/create_lb_server.yml
 
 # Create test server (from sysadmin/ansible/provision)
 ansible-playbook create_test_server.yml --e "droplet_name=3991 install_index=true git_branch=feature/3991_weekly_email_alert aws_profile=doaj-test aws_access_key=<SEE_PASSBOLT> aws_secret_key=<SEE_PASSBOLT>" --private-key=~/.ssh/cl_ed25519
+```
 
+Alternatively, keep the keys in a credentials-format file with a `[doaj-test]` section (your own `~/.aws/credentials` or a standalone file) and read them from there, which keeps them out of shell history:
+
+```
+ansible-playbook create_test_server.yml -e @aws_creds_from_file.yml --e="aws_profile=doaj-test aws_creds_file=/home/<you>/.aws/credentials droplet_name=3991 git_branch=feature/3991_weekly_email_alert" --private-key=~/.ssh/cl_ed25519
+```
+
+The local credentials file is:
+
+```
+[doaj-test]
+aws_access_key_id = <SEE_PASSBOLT>
+aws_secret_access_key = <SEE_PASSBOLT>
+```
+
+The profile must be `doaj-test`: it's the profile name `deploy.sh` uses on the server to fetch the app config. Only the credentials file is read; no local `.aws/config` is needed. The `@aws_creds_from_file.yml` must be its own `-e` and come first, so the `aws_profile` that follows overrides its default `doaj-app`. E.g.:
+
+```
 # Destroy a test server
 ansible-playbook destroy_test_server.yml --e "droplet_name=3991"
+```
+
+The static pages preview server (static.doaj.cottagelabs.com) has its own playbook with its size, branch and data set built in, so only credentials are needed. After that it's deployed by a GitHub Action on push to `static_pages`. Destruction uses the same test server playbook.
+
+```
+ansible-playbook destroy_test_server.yml --e "droplet_name=static"
+ansible-playbook create_static_server.yml -e @aws_creds_from_file.yml --e="aws_profile=doaj-test aws_creds_file=/home/<you>/.aws/credentials" --private-key=~/.ssh/cl_ed25519
 ```
 
 Test server AWS credentials for the anonymised data import live in Passbolt as *Test Server AWS Credentials* — see [[AWS]].
