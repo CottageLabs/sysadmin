@@ -1,6 +1,5 @@
+.obsidian/
 .idea
-.obsidian
 
 ### Ansible template
 *.retry
-

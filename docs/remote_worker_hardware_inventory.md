@@ -1,4 +1,10 @@
+---
+tags: [company-docs]
+---
+
 # Remote Worker Hardware Inventory
+
+Related: [[Ops_handbook]], [[cyber_essentials_cl_guidance]]
 
 **Purpose**: This inventory tracks hardware and software for remote workers to support CyberEssentials compliance and IT security management.
 
@@ -88,22 +94,6 @@
 
 ---
 
-## PK
-
-**Last Updated**: 2025-10-16
-
-### Dev Machine
-- **Make/Model**: Custom build PC
-- **OS & Version**: Linux 6.8.0-79-generic #79~22.04.1-Ubuntu
-- **Browser & Version**: Vivaldi 6.7.3329.31 (Stable channel) (64-bit)
-
-### Network Equipment
-- **ISP**: TalkTalk
-- **Router Make/Model**: TalkTalk router
-- **Firewall**: ufw firewall
-
----
-
 ## RS
 
 **Last Updated**: 2025-10-16
@@ -167,8 +157,24 @@
 - **Firewall**: Windows Firewall
 
 ---
+## BH
 
+### Machine
+
+### Network Equipment
+
+---
+
+
+## US
+
+### Machine
+
+### Network Equipment
 ## Notes for Completion
+
+---
+
 
 ### Dev Machine Examples
 - Make/Model: "Dell XPS 15 9520" or "Apple MacBook Pro 16-inch M2"

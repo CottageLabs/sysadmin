@@ -1,4 +1,10 @@
+---
+tags: [company-docs]
+---
+
 # Cyber Essentials BYOD Guidance for Cottage Labs
+
+Related: [[Ops_handbook]], [[remote_worker_hardware_inventory]]
 
 This document provides guidance for developers using their own devices (BYOD) to meet UK Cyber Essentials certification requirements for Cottage Labs.
 

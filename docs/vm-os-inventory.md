@@ -1,4 +1,10 @@
+---
+tags: [company-docs]
+---
+
 # VM Operating System Inventory
+
+Related: [[Ops_handbook]]
 
 Last updated: 2025-10-11
 
