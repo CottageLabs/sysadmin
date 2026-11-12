@@ -200,12 +200,18 @@
         method: POST
         body_format: json
         body: {}
+        status_code: [200, 400]
+        return_content: yes
+      register: stop_result
+      # 400 "No replication in progress" is fine: already stopped, or never replicated (e.g. the empty indexes left in aliases)
+      failed_when: stop_result.status == 400 and 'No replication in progress' not in (stop_result.content | default(''))
       loop: "{{ to_delete if cleanup_stale | bool else [] }}"
 
     - name: Delete the stale indexes
       uri:
         url: "{{ os_url }}/{{ item }}"
         method: DELETE
+      changed_when: true
       loop: "{{ to_delete if cleanup_stale | bool else [] }}"
 
 # Last, so cleanup_stale=true can fix it first: an alias pointing at more than one index breaks every single-document
