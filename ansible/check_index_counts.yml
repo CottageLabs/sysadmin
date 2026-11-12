@@ -1,0 +1,236 @@
+# Check the read-only search cluster (doaj-r) against the read-write one (doaj-rw, the cross-cluster replication leader;
+# doaj-r follows every doaj-* index via the replicate-doaj-all autofollow rule), and report index sizes and disk space:
+#   ansible-playbook -i doaj-hosts.ini check_index_counts.yml
+#   ansible-playbook -i doaj-hosts.ini check_index_counts.yml -e max_doc_diff=0
+#   ansible-playbook -i doaj-hosts.ini check_index_counts.yml -e cleanup_stale=true    # also delete stale indexes from doaj-r
+#
+# Read-only unless cleanup_stale=true. Queries go to each node's private eth1 address, where OpenSearch listens.
+#
+# Counts are what a search sees (a terms aggregation on _index, same as _count), not _cat/indices docs.count: that comes
+# from segment stats, which can lag searches by dozens of documents on high-churn indexes like background_job even when
+# replication is fully caught up. The clusters are counted a moment apart, so a small difference on busy indexes is normal
+# replication lag. The checks fail if a read-write index is missing from doaj-r, a count differs by more than max_doc_diff,
+# or a node's disk is fuller than max_disk_percent (OpenSearch's low watermark, where it stops allocating shards, is 85%).
+#
+# Stale indexes: replication doesn't propagate index deletes, so old versions of indexes deleted on doaj-rw stay on doaj-r,
+# still in their aliases - so reads through e.g. doaj-note on doaj-r can also hit the old index. cleanup_stale=true stops
+# replication on each and deletes it. It only runs if all the checks pass, and never deletes an index that is the only one
+# in one of its aliases on doaj-r (those are listed for a human to look at).
+---
+- hosts: opensearch-rw[0]:opensearch-r[0]
+  gather_facts: true
+  gather_subset: network
+
+  vars:
+    index_pattern: doaj-*
+
+  tasks:
+    - name: Find this cluster's address
+      set_fact:
+        os_url: "http://{{ ansible_facts.eth1.ipv4.address }}:9200"
+
+    - name: Get the indexes and their sizes
+      uri:
+        url: "{{ os_url }}/_cat/indices/{{ index_pattern }}?format=json&bytes=b&h=index,health,status,store.size"
+      register: cat_indices
+
+    - name: Count the documents in each index
+      uri:
+        url: "{{ os_url }}/{{ index_pattern }}/_search?filter_path=aggregations"
+        method: GET
+        body_format: json
+        body:
+          size: 0
+          aggs:
+            per_index:
+              terms:
+                field: _index
+                size: 1000
+      register: doc_counts
+
+    - name: Get the aliases
+      uri:
+        url: "{{ os_url }}/_cat/aliases/{{ index_pattern }}?format=json&h=alias,index"
+      register: cat_aliases
+
+    - name: Get the disk usage
+      uri:
+        url: "{{ os_url }}/_cat/allocation?format=json&bytes=b&h=node,shards,disk.indices,disk.used,disk.avail,disk.total,disk.percent"
+      register: cat_allocation
+
+- hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    max_doc_diff: 50
+    max_disk_percent: 80
+    rw_host: "{{ hostvars[groups['opensearch-rw'][0]] }}"
+    r_host: "{{ hostvars[groups['opensearch-r'][0]] }}"
+
+  tasks:
+    - name: Compare the indexes
+      set_fact:
+        index_counts: >-
+          {%- set rw = {} -%}
+          {%- set r = {} -%}
+          {%- set rw_count = {} -%}
+          {%- set r_count = {} -%}
+          {%- for i in rw_host.cat_indices.json -%}{%- set _ = rw.update({i['index']: i}) -%}{%- endfor -%}
+          {%- for i in r_host.cat_indices.json -%}{%- set _ = r.update({i['index']: i}) -%}{%- endfor -%}
+          {%- for b in rw_host.doc_counts.json.aggregations.per_index.buckets -%}{%- set _ = rw_count.update({b['key']: b['doc_count']}) -%}{%- endfor -%}
+          {%- for b in r_host.doc_counts.json.aggregations.per_index.buckets -%}{%- set _ = r_count.update({b['key']: b['doc_count']}) -%}{%- endfor -%}
+          {%- set out = [] -%}
+          {%- for name in (rw.keys() | list + r.keys() | list) | unique | sort -%}
+            {#- an index with no documents has no bucket -#}
+            {%- set rw_docs = rw_count.get(name, 0) if name in rw else none -%}
+            {%- set r_docs = r_count.get(name, 0) if name in r else none -%}
+            {%- set _ = out.append({'index': name,
+                                    'rw': rw_docs,
+                                    'r': r_docs,
+                                    'diff': (rw_docs - r_docs) if (name in rw and name in r) else none,
+                                    'rw_size': rw[name]['store.size'] | int(0) if name in rw else 0,
+                                    'r_size': r[name]['store.size'] | int(0) if name in r else 0}) -%}
+          {%- endfor -%}
+          {{ out }}
+
+    - name: Find the stale indexes (on doaj-r only) and their aliases
+      set_fact:
+        stale_indexes: >-
+          {%- set stale = index_counts | selectattr('rw', 'none') | map(attribute='index') | list -%}
+          {%- set out = [] -%}
+          {%- for name in stale -%}
+            {%- set aliases = r_host.cat_aliases.json | selectattr('index', 'eq', name) | map(attribute='alias') | list -%}
+            {%- set only_index_for = [] -%}
+            {%- for a in aliases -%}
+              {%- set others = r_host.cat_aliases.json | selectattr('alias', 'eq', a) | map(attribute='index') | reject('in', stale) | list -%}
+              {%- if others | length == 0 -%}{%- set _ = only_index_for.append(a) -%}{%- endif -%}
+            {%- endfor -%}
+            {%- set _ = out.append({'index': name,
+                                    'aliases': aliases,
+                                    'only_index_for': only_index_for,
+                                    'size': (index_counts | selectattr('index', 'eq', name) | first)['r_size']}) -%}
+          {%- endfor -%}
+          {{ out }}
+
+    - name: Collect the disk usage
+      set_fact:
+        disks: >-
+          {%- set out = [] -%}
+          {%- for n in rw_host.cat_allocation.json + r_host.cat_allocation.json if n['node'] != 'UNASSIGNED' -%}
+            {%- set _ = out.append({'node': n['node'], 'shards': n['shards'] | int(0),
+                                    'percent': n['disk.percent'] | int(0), 'avail': n['disk.avail'] | int(0),
+                                    'total': n['disk.total'] | int(0), 'indices': n['disk.indices'] | int(0)}) -%}
+          {%- endfor -%}
+          {{ out }}
+
+    - name: Show the counts and sizes (rw / r / difference)
+      debug:
+        msg: >-
+          {{ item.index }}: rw={{ item.rw }} r={{ item.r if item.r is not none else 'MISSING' }}
+          diff={{ item.diff if item.diff is not none else '-' }},
+          size rw={{ item.rw_size | human_readable }} r={{ item.r_size | human_readable }}
+      loop: "{{ index_counts | rejectattr('rw', 'none') | list }}"
+      loop_control:
+        label: "{{ item.index }}"
+
+    - name: Show the stale indexes, on doaj-r only (deleted on doaj-rw)
+      debug:
+        msg: >-
+          {{ item.index }}: {{ item.size | human_readable }}
+          {%- if item.aliases %}, still in alias {{ item.aliases | join(', ') }}{% endif %}
+          {%- if item.only_index_for %} - the ONLY index in {{ item.only_index_for | join(', ') }}, won't be deleted{% endif %}
+      loop: "{{ stale_indexes }}"
+      loop_control:
+        label: "{{ item.index }}"
+
+    - name: Show the disk usage per node
+      debug:
+        msg: >-
+          {{ item.node }}: {{ item.percent }}% used, {{ item.avail | human_readable }} free of
+          {{ item.total | human_readable }} (indexes {{ item.indices | human_readable }}, {{ item.shards }} shards)
+      loop: "{{ disks }}"
+      loop_control:
+        label: "{{ item.node }}"
+
+    - name: Show the totals (store sizes include replica shards)
+      debug:
+        msg:
+          - "doaj-rw: {{ index_counts | rejectattr('rw', 'none') | list | length }} indexes, {{ index_counts | sum(attribute='rw_size') | human_readable }}"
+          - "doaj-r: {{ index_counts | rejectattr('r', 'none') | list | length }} indexes, {{ index_counts | sum(attribute='r_size') | human_readable }}"
+          - "stale on doaj-r: {{ stale_indexes | length }} indexes, {{ stale_indexes | sum(attribute='size') | human_readable }}"
+
+    - name: Check every read-write index is on doaj-r with counts within {{ max_doc_diff }}
+      assert:
+        that: problems | length == 0
+        fail_msg: "Indexes missing from doaj-r or out of step: {{ problems | map(attribute='index') | join(', ') }}"
+        success_msg: "All {{ index_counts | rejectattr('rw', 'none') | list | length }} read-write indexes are on doaj-r, within {{ max_doc_diff }} documents"
+      vars:
+        compared: "{{ index_counts | rejectattr('diff', 'none') | list }}"
+        problems: >-
+          {{ index_counts | rejectattr('rw', 'none') | selectattr('r', 'none') | list
+             + compared | selectattr('diff', 'gt', max_doc_diff | int) | list
+             + compared | selectattr('diff', 'lt', -(max_doc_diff | int)) | list }}
+
+    - name: Check the disks are no fuller than {{ max_disk_percent }}%
+      assert:
+        that: full | length == 0
+        fail_msg: "Disk over {{ max_disk_percent }}% on: {{ full | map(attribute='node') | join(', ') }}"
+        success_msg: "All {{ disks | length }} search node disks are at or under {{ max_disk_percent }}%"
+      vars:
+        full: "{{ disks | selectattr('percent', 'gt', max_disk_percent | int) | list }}"
+
+# Only reached if every check above passed (a failed assert ends the run)
+- hosts: opensearch-r[0]
+  gather_facts: false
+
+  vars:
+    cleanup_stale: false
+    to_delete: "{{ hostvars['localhost']['stale_indexes'] | rejectattr('only_index_for') | map(attribute='index') | list }}"
+
+  tasks:
+    - name: Make sure the read-write cluster really returned its indexes before deleting anything
+      assert:
+        that: hostvars[groups['opensearch-rw'][0]]['cat_indices']['json'] | length > 0
+      when: cleanup_stale | bool
+
+    - name: Stop replication on the stale indexes
+      uri:
+        url: "{{ os_url }}/_plugins/_replication/{{ item }}/_stop"
+        method: POST
+        body_format: json
+        body: {}
+      loop: "{{ to_delete if cleanup_stale | bool else [] }}"
+
+    - name: Delete the stale indexes
+      uri:
+        url: "{{ os_url }}/{{ item }}"
+        method: DELETE
+      loop: "{{ to_delete if cleanup_stale | bool else [] }}"
+
+# Last, so cleanup_stale=true can fix it first: an alias pointing at more than one index breaks every single-document
+# operation through it (GET by id: "alias [doaj-note] has more than one index associated with it, can't execute a single
+# index op"). On doaj-r this is what stale indexes still in an alias cause.
+- hosts: opensearch-rw[0]:opensearch-r[0]
+  gather_facts: false
+
+  tasks:
+    - name: Get the aliases again
+      uri:
+        url: "{{ os_url }}/_cat/aliases/doaj-*?format=json&h=alias,index"
+      register: final_aliases
+
+    - name: Check no alias points at more than one index
+      assert:
+        that: multi | length == 0
+        fail_msg: >-
+          Aliases on more than one index (single-document operations through them fail):
+          {% for a in multi %}{{ a }} -> {{ final_aliases.json | selectattr('alias', 'eq', a) | map(attribute='index') | join(', ') }}; {% endfor %}
+          Run with -e cleanup_stale=true if those are stale indexes.
+        success_msg: "Every alias points at exactly one index"
+      vars:
+        multi: >-
+          {%- set names = final_aliases.json | map(attribute='alias') | list -%}
+          {%- set out = [] -%}
+          {%- for a in names | unique | sort if names.count(a) > 1 -%}{%- set _ = out.append(a) -%}{%- endfor -%}
+          {{ out }}
