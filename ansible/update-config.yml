@@ -4,7 +4,10 @@
     - name: Ping all production hosts to check we're fully up and running
       ping:
 
+# One host at a time: deploy.sh restarts the app, and the load balancer retries requests on the other servers
+# while each one restarts, so a rolling deploy doesn't drop traffic (as in update-site.yml)
 - hosts: app:loadbalancer
+  serial: 1
   tasks:
     - name: Run the service deploy script to get the config then restart
       shell: /home/cloo/doaj/deploy/deploy.sh production

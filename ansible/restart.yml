@@ -4,21 +4,24 @@
     - name: Ping all production hosts to check we're fully up and running
       ping:
 
+# One host at a time: the load balancer retries requests on the other servers while each one restarts,
+# so a rolling restart doesn't drop traffic (as in update-site.yml).
 - hosts: app
+  serial: 1
   tasks:
-# supervisord module does not support all
-#    - name: restart all supervisor services
-#      supervisorctl:
-#        name: all
-#        state: restarted
-#      become: yes
 
     - name: restart all supervisor services
       command: supervisorctl restart all
       become: yes
 
-    - name: Restart nginx
-      service:
+- hosts: loadbalancer
+  become: yes
+  tasks:
+    - name: Check the nginx config
+      command: nginx -t
+      changed_when: false
+
+    - name: Reload nginx
+      ansible.builtin.systemd_service:
         name: nginx
-        state: restarted
-      become: yes
+        state: reloaded
