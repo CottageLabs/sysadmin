@@ -1,0 +1,64 @@
+# Switch the public app servers between the read-only search cluster (doaj-r, their normal setting) and the read-write
+# one (doaj-rw), e.g. when doaj-r is overloaded or behind during a reindex:
+#   ansible-playbook -i doaj-hosts.ini override_public_search_cluster.yml -e search_cluster=rw
+#   ansible-playbook -i doaj-hosts.ini override_public_search_cluster.yml -e search_cluster=r
+#
+# The provisioned ELASTICSEARCH_HOSTS line in instance.cfg (doaj-r) is left alone: for rw, a managed block appended
+# after it overrides it (the last assignment wins), and switching back removes the block. Editor and background servers
+# always use doaj-rw, from production.cfg.
+#
+# One server at a time: doaj is restarted, not HUPed, because when doaj-r stops responding the gunicorn master can die
+# ("Worker failed to boot") and leave orphaned workers holding port 5050, so that supervisor's new gunicorn can't bind.
+# Any such orphans are killed first, and each server must answer before the next one is switched.
+---
+- hosts: app-readonly
+  gather_facts: false
+  serial: 1
+
+  vars:
+    rw_hosts: "{{ hostvars[groups['opensearch-rw'][0]].opensearch_seed_hosts }}"
+
+  tasks:
+    - name: Check we've been told which cluster to use
+      assert:
+        that: search_cluster is defined and search_cluster in ['rw', 'r']
+        fail_msg: "Use -e search_cluster=rw or -e search_cluster=r"
+      run_once: true
+
+    - name: Point the app at the chosen cluster in instance.cfg
+      blockinfile:
+        path: /home/cloo/doaj/instance.cfg
+        marker: "# {mark} SEARCH CLUSTER OVERRIDE (doaj-rw) - managed by override_public_search_cluster.yml"
+        block: |
+          ELASTICSEARCH_HOSTS = [{% for h in rw_hosts %}{'host': '{{ h }}', 'port': 9200}{{ ', ' if not loop.last else '' }}{% endfor %}]
+        insertafter: EOF
+        state: "{{ 'present' if search_cluster == 'rw' else 'absent' }}"
+      register: cfg
+
+    - name: Kill any orphaned gunicorn workers (parent died) still holding the port
+      become: yes
+      shell: |
+        pids=$(ps -eo pid=,ppid=,args= | awk '$2 == 1 && /gunicorn: worker \[doaj\]/ {print $1}')
+        [ -z "$pids" ] && exit 0
+        echo "$pids"
+        kill -9 $pids
+      register: orphans
+      changed_when: orphans.stdout != ""
+
+    - name: Restart the doaj app
+      become: yes
+      command: supervisorctl restart doaj
+      when: cfg is changed or orphans is changed
+
+    - name: Wait for the app to answer before moving on to the next server
+      uri:
+        url: http://localhost:5050/
+        timeout: 15
+      register: home
+      until: home.status == 200
+      retries: 24
+      delay: 5
+
+    - name: Show which cluster the app now uses
+      command: grep -n "^ELASTICSEARCH_HOSTS" /home/cloo/doaj/instance.cfg
+      changed_when: false

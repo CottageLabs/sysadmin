@@ -1,5 +1,5 @@
 #
-# ansible-playbook create_test_server.yml --e "droplet_name=<name> git_branch=<git branch> aws_profile=doaj-test aws_access_key=<key> aws_secret_key=<key>" --private-key=~/.ssh/id_rsa -vv
+# ansible-playbook create_test_server.yml --e "droplet_name=<name> git_branch=<git branch> aws_profile=doaj-test aws_access_key=<key> aws_secret_key=<key>" --private-key=~/.ssh/cl-doaj -vv
 #
 ---
 - name: Bring up a new DOAJ test server
